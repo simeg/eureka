@@ -1,0 +1,11 @@
+[package]
+name = "idea"
+version = "0.1.0"
+authors = ["Simon Egersand <s.egersand@gmail.com>"]
+
+[dependencies]
+clap = "~2.27.0"
+serde = "~0.8"
+serde_derive = "~0.8"
+serde_json = "~0.8"
+
