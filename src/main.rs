@@ -1,4 +1,5 @@
 use std::env;
+use std::io;
 use std::fs;
 use std::path::Path;
 use std::io::{Read, Write};
@@ -9,11 +10,16 @@ extern crate serde_derive;
 extern crate serde_json as json;
 extern crate serde;
 
+
+#[macro_use]
+extern crate text_io;
+
 #[macro_use]
 extern crate clap;
-use clap::{ArgMatches};
 
+use clap::ArgMatches;
 use clap::{App, Arg};
+
 
 fn main() {
     let cli_flags: ArgMatches = App::new("idea")
@@ -24,7 +30,7 @@ fn main() {
             .short("r")
             .long("path")
             .takes_value(true)
-            .help("Absolute path to the repo where you have the README.md with ideas"))
+            .help("Path to the repo where you have the README.md with ideas"))
         .arg(Arg::with_name("default-commit-msg")
             .short("m")
             .long("msg")
@@ -32,33 +38,92 @@ fn main() {
             .help("The git commit message used if you don't specify one"))
         .get_matches();
 
-    // Ask what editor to use
-    // - vim
-    // - nano
-    // - ed
-    // - what more?
-    // (Use fallback editor)
-
-    //    let user_inputted_repo_path = String::from("/Users/simon/repos/ideas"); // TODO: Get from user + change var name
-    //    let user_inputted_editor_path = String::from("/usr/bin/vim"); // TODO: Get from user + change var name
-
     let repo_path: String = match read_from_config(s("repo_path")) {
         Some(file_path) => file_path,
-        None => panic!("Could not read repo path file"),
+        None => {
+            display_first_time_setup_banner();
+            if !path_exists(&get_config_location()) {
+                fs::create_dir_all(&get_config_location());
+            }
+
+            print!("Path to your idea repo: ");
+            io::stdout().flush().unwrap();
+            let input_path: String = read!();
+            let copy_input_path: String = input_path.clone();
+
+            // TODO: Handle if extra / on the end
+
+            match write_to_config("repo_path", input_path) {
+                Ok(_) => copy_input_path,
+                Err(e) => panic!("Unable to write your repo path to disk: {}", e),
+            }
+        }
     };
 
-    let preferred_editor: String = match read_from_config(s("preferred_editor_path")) {
-        Some(editor_bin_path) => editor_bin_path,
-        None => panic!("Could not read preferred editor path file"),
+    let editor_path: String = match read_from_config(s("editor_path")) {
+        Some(file_path) => file_path,
+        None => {
+            println!("What editor do you want to use for writing down your ideas?");
+            println!("1) vim (/usr/bin/vim)");
+            println!("2) nano (/usr/bin/nano)");
+            println!("3) Other (provide path to binary)");
+            println!();
+            print!("Alternative: ");
+            io::stdout().flush().unwrap();
+
+            let input_choice: String = read!();
+            let editor_choice: u32 = input_choice.parse::<u32>().unwrap();
+            let input_path: String = match editor_choice {
+                1 => s("/usr/bin/vim"),
+                2 => s("/usr/bin/nano"),
+                3 => {
+                    print!("Path to editor binary: ");
+                    io::stdout().flush().unwrap();
+                    let editor_bin_path: String = read!();
+                    editor_bin_path
+                }
+                _ => {
+                    println!("Invalid option, falling back to vim");
+                    s("/usr/bin/vim")
+                }
+            };
+
+            if !path_exists(&input_path) {
+                panic!("Invalid editor path");
+            }
+
+            let copy_input_path: String = input_path.clone();
+            match write_to_config("editor_path", input_path) {
+                Ok(_) => copy_input_path,
+                Err(e) => panic!("Unable to write your editor path to disk: {}", e),
+            }
+        }
     };
 
     let readme_path: String = format!("{}/README.md", repo_path);
-    match open_editor(&preferred_editor, &readme_path) {
+    match open_editor(&editor_path, &readme_path) {
         Ok(_) => {
             let git_result = git_commit_and_push(&repo_path, s(""));
         }
         Err(_) => {}
     };
+}
+
+fn display_first_time_setup_banner() {
+    println!();
+    println!("##########################################################");
+    println!("####                 First Time Setup                 ####");
+    println!("##########################################################");
+    println!();
+    println!("This tool requires you to have a repository with the a");
+    println!("README.md in the root folder. The markdown file is where");
+    println!("your ideas will be stored.");
+    println!();
+}
+
+fn ask_for_path_to_repo() {
+    println!("What is the absolute path to your idea repo?");
+    let repo_path: String = read!();
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), ()> {
@@ -133,14 +198,11 @@ fn git_commit(repo_path: &String, msg: String) -> Result<(), ()> {
 
 
 /*
- * File utils
+ * File and folder utils
 */
 
-fn file_exists(path: &String) -> bool {
-    match ::fs::File::open(&path) {
-        Ok(_) => true,
-        Err(_) => false
-    }
+fn path_exists(path: &str) -> bool {
+    fs::metadata(path).is_ok()
 }
 
 fn read_from_config<T: ::serde::Deserialize>(key: String) -> Option<T> {
@@ -165,7 +227,7 @@ fn read_from_config<T: ::serde::Deserialize>(key: String) -> Option<T> {
     }
 }
 
-fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, ()> {
+fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json::Error)> {
     let location = get_config_location();
     let path = format!("{}/{}", location, key);
     match ::fs::File::create(path) {
@@ -175,12 +237,12 @@ fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, ()> {
                     let _ = file.write(&str_data.into_bytes());
                     Ok(data)
                 }
-                Err(e) => panic!("Could not deserialize data: {}", e)
+                Err(e) => Err(e)
             }
         }
         Err(_) => {
-            // TODO: Overwrite existing value
-            println!("File for for [{}] already exist, doing nothing", key);
+            // TODO: Overwrite existing value, use additional param to decide it
+            // File for [key] already exist, doing nothing
             Ok(data)
         }
     }
