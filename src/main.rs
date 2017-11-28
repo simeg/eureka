@@ -1,12 +1,9 @@
 use std::env;
 use std::io;
 use std::fs;
-use std::path::Path;
 use std::io::{Read, Write};
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
-#[macro_use]
-extern crate serde_derive;
 extern crate serde_json as json;
 extern crate serde;
 
@@ -22,7 +19,7 @@ use clap::{App, Arg};
 
 
 fn main() {
-    let cli_flags: ArgMatches = App::new("idea")
+    let _cli_flags: ArgMatches = App::new("idea")
         .author(crate_authors!())
         .version(crate_version!())
         .about("Quickly save your ideas without leaving the terminal")
@@ -38,13 +35,22 @@ fn main() {
             .help("The git commit message used if you don't specify one"))
         .get_matches();
 
+    // TODO: Add param for clearing saved repo/editor
+
     let repo_path: String = match read_from_config(s("repo_path")) {
         Some(file_path) => file_path,
         None => {
             display_first_time_setup_banner();
             if !path_exists(&get_config_location()) {
-                fs::create_dir_all(&get_config_location());
+                match fs::create_dir_all(&get_config_location()) {
+                    Ok(_) => {}
+                    Err(_) => panic!(
+                        "Could not create dir at {} to store necessary config",
+                        get_config_location()
+                    ),
+                }
             }
+
 
             print!("Absolute path to your idea repo: ");
             io::stdout().flush().unwrap();
@@ -121,11 +127,6 @@ fn display_first_time_setup_banner() {
     println!();
 }
 
-fn ask_for_path_to_repo() {
-    println!("What is the absolute path to your idea repo?");
-    let repo_path: String = read!();
-}
-
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), ()> {
     match Command::new(bin_path)
         .arg(file_path)
@@ -174,7 +175,6 @@ fn git_add(repo_path: &String) -> Result<(), ()> {
         Ok(_) => Ok(()),
         Err(e) => {
             panic!("Could not add files with git in repo at [{}]: {}", repo_path, e);
-            Err(())
         }
     }
 }
