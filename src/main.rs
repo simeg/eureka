@@ -113,7 +113,7 @@ fn main() {
 
     match open_editor(&editor_path, &readme_path) {
         Ok(_) => {
-            let git_result = git_commit_and_push(&repo_path, commit_msg);
+            let _ = git_commit_and_push(&repo_path, commit_msg);
         }
         Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
     };
