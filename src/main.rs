@@ -132,10 +132,12 @@ fn display_first_time_setup_banner() {
 }
 
 fn get_commit_msg() -> String {
-    print!("Idea commit subject: ");
-    io::stdout().flush().unwrap();
-    let commit_msg: String = read!();
-    commit_msg
+    println!("Idea commit subject: ");
+    let mut input = String::new();
+    // The library text_io doesn't read input
+    // if it has any whitespace in it
+    io::stdin().read_line(&mut input).unwrap();
+    input
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
