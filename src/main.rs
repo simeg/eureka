@@ -51,7 +51,6 @@ fn main() {
                 }
             }
 
-
             print!("Absolute path to your idea repo: ");
             io::stdout().flush().unwrap();
             let input_path: String = read!();
@@ -105,10 +104,12 @@ fn main() {
         }
     };
 
+    let commit_msg: String = get_commit_msg();
     let readme_path: String = format!("{}/README.md", repo_path);
+
     match open_editor(&editor_path, &readme_path) {
         Ok(_) => {
-            let git_result = git_commit_and_push(&repo_path, s(""));
+            let git_result = git_commit_and_push(&repo_path, commit_msg);
         }
         Err(_) => {}
     };
@@ -124,6 +125,13 @@ fn display_first_time_setup_banner() {
     println!("README.md in the root folder. The markdown file is where");
     println!("your ideas will be stored.");
     println!();
+}
+
+fn get_commit_msg() -> String {
+    print!("Commit subject: ");
+    io::stdout().flush().unwrap();
+    let commit_msg: String = read!();
+    commit_msg
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), ()> {
@@ -154,6 +162,8 @@ fn git_commit_and_push(repo_path: &String, msg: String) -> Result<(), ()> {
     // Use the results
     let _git_add = git_add(repo_path);
     let _git_commit = git_commit(repo_path, String::from("This is a test commit, drop me if you see me"));
+
+    // if add and commit was OK, push
 
     Ok(())
 }
