@@ -132,7 +132,7 @@ fn display_first_time_setup_banner() {
 }
 
 fn get_commit_msg() -> String {
-    print!("Commit subject: ");
+    print!("Idea commit subject: ");
     io::stdout().flush().unwrap();
     let commit_msg: String = read!();
     commit_msg
