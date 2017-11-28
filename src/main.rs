@@ -22,7 +22,7 @@ use clap::{App, Arg};
 
 
 fn main() {
-    let _cli_flags: ArgMatches = App::new("idea")
+    let _cli_flags: ArgMatches = App::new("eureka")
         .author(crate_authors!())
         .version(crate_version!())
         .about("Quickly save your ideas without leaving the terminal")
@@ -282,7 +282,7 @@ fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json
 
 fn get_config_location() -> String {
     match ::env::home_dir() {
-        Some(location) => format!("{}/{}", location.display(), ".idea-cli/config"),
+        Some(location) => format!("{}/{}", location.display(), ".eureka/"),
         None => panic!("Could not resolve your $HOME directory")
     }
 }
