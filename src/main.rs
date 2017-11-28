@@ -78,6 +78,7 @@ fn main() {
             io::stdout().flush().unwrap();
 
             let input_choice: String = read!();
+            // Cast to int to be able to match
             let editor_choice: u32 = input_choice.parse::<u32>().unwrap();
             let input_path: String = match editor_choice {
                 1 => s("/usr/bin/vim"),
@@ -160,14 +161,10 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
 */
 
 fn git_commit_and_push(repo_path: &String, msg: String) -> Result<(), ()> {
-    let git = get_git_path().unwrap(); // TODO
-
-    // Use the results
-    let _git_add = git_add(repo_path);
-    let _git_commit = git_commit(repo_path, String::from("This is a test commit, drop me if you see me"));
-
-    // if add and commit was OK, push
-
+    // TODO: See how to chain these function calls
+    git_add(repo_path).unwrap();
+    git_commit(repo_path, msg).unwrap();
+    git_push(repo_path).unwrap();
     Ok(())
 }
 
@@ -176,7 +173,7 @@ fn get_git_path() -> Result<String, ()> {
     Ok(String::from("/usr/bin/git"))
 }
 
-fn git_add(repo_path: &String) -> Result<(), ()> {
+fn git_add(repo_path: &String) -> Result<(), Error> {
     let git = get_git_path().unwrap(); // TODO
     match Command::new(git)
         .arg(format!("--git-dir={}/.git/", repo_path))
@@ -186,12 +183,13 @@ fn git_add(repo_path: &String) -> Result<(), ()> {
         .status() {
         Ok(_) => Ok(()),
         Err(e) => {
-            panic!("Could not add files with git in repo at [{}]: {}", repo_path, e);
+            println!("Could not stage files to repo at [{}]: {}", repo_path, e);
+            Err(e)
         }
     }
 }
 
-fn git_commit(repo_path: &String, msg: String) -> Result<(), ()> {
+fn git_commit(repo_path: &String, msg: String) -> Result<(), Error> {
     let git = get_git_path().unwrap(); // TODO
     match Command::new(git)
         .arg(format!("--git-dir={}/.git/", repo_path))
@@ -202,8 +200,30 @@ fn git_commit(repo_path: &String, msg: String) -> Result<(), ()> {
         .status() {
         Ok(_) => Ok(()),
         Err(e) => {
-            println!("Could not commit new idea with git in repo at [{}]: {}", repo_path, e);
-            Err(())
+            println!("Could not commit new idea to repo at [{}]: {}", repo_path, e);
+            Err(e)
+        }
+    }
+}
+
+fn git_push(repo_path: &String) -> Result<(), Error> {
+    let git = get_git_path().unwrap(); // TODO
+    match Command::new(git)
+        .arg(format!("--git-dir={}/.git/", repo_path))
+        .arg(format!("--work-tree={}", repo_path))
+        .arg("push")
+        .arg("origin")
+        .arg("master")
+        .status() {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            println!(
+                "Could not push commit to remote 'origin' and \
+                branch 'master' in repo at [{}]: {}",
+                repo_path,
+                e
+            );
+            Err(e)
         }
     }
 }
