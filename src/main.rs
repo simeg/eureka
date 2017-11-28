@@ -57,8 +57,6 @@ fn main() {
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
 
-            // TODO: Handle if extra / on the end
-
             match write_to_config("repo_path", input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your repo path to disk: {}", e),
