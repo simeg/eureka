@@ -30,3 +30,5 @@ An easy to remember alias for `eureka` is the word `idea`. This makes it easy to
 ## Improvements
 See [github issues](https://github.com/simeg/eureka/issues).
 
+## License
+MIT
