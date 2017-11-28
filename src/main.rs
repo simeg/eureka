@@ -1,7 +1,7 @@
 use std::env;
 use std::io;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::{Read, Write, Error};
 use std::process::Command;
 
 extern crate serde_json as json;
@@ -111,7 +111,7 @@ fn main() {
         Ok(_) => {
             let git_result = git_commit_and_push(&repo_path, commit_msg);
         }
-        Err(_) => {}
+        Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
     };
 }
 
@@ -134,7 +134,7 @@ fn get_commit_msg() -> String {
     commit_msg
 }
 
-fn open_editor(bin_path: &String, file_path: &String) -> Result<(), ()> {
+fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
     match Command::new(bin_path)
         .arg(file_path)
         .status() {
@@ -146,7 +146,7 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), ()> {
                 bin_path,
                 e
             );
-            Err(())
+            Err(e)
         }
     }
 }
