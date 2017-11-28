@@ -87,6 +87,7 @@ fn main() {
                     editor_bin_path
                 }
                 _ => {
+                    // TODO: Do not fall back, ask user again for options
                     println!("Invalid option, falling back to vim");
                     s("/usr/bin/vim")
                 }
