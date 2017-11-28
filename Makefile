@@ -1,4 +1,4 @@
-.PHONY: build clean link install release run
+.PHONY: build clean link lint install release run
 
 build:
 	cargo build
@@ -7,13 +7,13 @@ clean:
 	rm -rf ./target
 
 link:
-	ln -sf ./target/debug/idea .
+	ln -sf ./target/debug/eureka .
 
 lint:
 	cargo build --features "clippy"
 
 install:
-	cp ./target/release/idea /usr/local/bin/idea
+	cp ./target/release/eureka /usr/local/bin/eureka
 
 release:
 	cargo build --release
