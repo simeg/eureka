@@ -30,7 +30,7 @@ fn main() {
             .short("r")
             .long("path")
             .takes_value(true)
-            .help("Path to the repo where you have the README.md with ideas"))
+            .help("Absolute path to the repo where you have the README.md with ideas"))
         .arg(Arg::with_name("default-commit-msg")
             .short("m")
             .long("msg")
@@ -46,7 +46,7 @@ fn main() {
                 fs::create_dir_all(&get_config_location());
             }
 
-            print!("Path to your idea repo: ");
+            print!("Absolute path to your idea repo: ");
             io::stdout().flush().unwrap();
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
