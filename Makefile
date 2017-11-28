@@ -9,6 +9,9 @@ clean:
 link:
 	ln -sf ./target/debug/idea .
 
+lint:
+	cargo build --features "clippy"
+
 install:
 	cp ./target/release/idea /usr/local/bin/idea
 

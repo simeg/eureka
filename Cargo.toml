@@ -9,3 +9,7 @@ serde = "~0.8"
 serde_derive = "~0.8"
 serde_json = "~0.8"
 text_io = "~0.1.5"
+clippy = {version = "*", optional = true}
+
+[features]
+default = []
