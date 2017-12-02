@@ -2,6 +2,8 @@
 name = "eureka"
 version = "1.0.0"
 authors = ["Simon Egersand <s.egersand@gmail.com>"]
+description = "CLI tool to input and store your ideas without leaving the terminal"
+license = "MIT"
 exclude = [
     "assets/*",
 ]
