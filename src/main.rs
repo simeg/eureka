@@ -22,22 +22,25 @@ use clap::{App, Arg};
 
 
 fn main() {
-    let _cli_flags: ArgMatches = App::new("eureka")
+    let cli_flags: ArgMatches = App::new("eureka")
         .author(crate_authors!())
         .version(crate_version!())
-        .about("Quickly save your ideas without leaving the terminal")
-        .arg(Arg::with_name("repo-path")
-            .short("r")
-            .long("path")
-            .takes_value(true)
-            .help("Absolute path to the repo where you have the README.md with ideas"))
-        .arg(Arg::with_name("default-commit-msg")
-            .short("m")
-            .long("msg")
-            .takes_value(true)
-            .help("The git commit message used if you don't specify one"))
+        .about("Input and store your ideas without leaving the terminal")
+        .arg(Arg::with_name("clear-repo")
+            .long("clear-repo")
+            .help("Use this flag to clear the stored path to your idea repo"))
+        .arg(Arg::with_name("clear-editor")
+            .long("clear-editor")
+            .help("Use this flag to clear the stored path to your idea editor"))
         .get_matches();
 
+    if cli_flags.is_present("clear-repo") {
+        // Clear repo config value
+    }
+
+    if cli_flags.is_present("clear-repo") {
+        // Clear repo config value
+    }
     // TODO: Add param for clearing saved repo/editor
 
     let repo_path: String = match read_from_config(s("repo_path")) {
