@@ -2,14 +2,18 @@
 `eureka` is a CLI tool that allows you to quickly write down your idea with the editor of your
 choice, and then have the idea committed and pushed to your idea git repository.
 
-It's developed _by_ and _for_ people who likes to live in the terminal.
+Imagine working on something important and then having an idea. Instead of letting your idea
+slip by you can just type `eureka` and you're able to quickly store your idea and then
+continue working.
+
+**It's developed _by_ and _for_ people who likes living in the terminal.**
 
 ![demo](assets/demo.gif)
 
 ## Required Setup
 `eureka` requires a git repository with a `README.md` in the root folder. This is the default
 structure when you create an empty repository with a readme on GitHub, so it's easy to start using
-it.
+it. It's also possible to 
 
 ### Dependencies
 - [rust](https://www.rust-lang.org)
