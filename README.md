@@ -11,6 +11,10 @@ It's developed _by_ and _for_ people who likes to live in the terminal.
 structure when you create an empty repository with a readme on GitHub, so it's easy to start using
 it.
 
+### Dependencies
+- [rust](https://www.rust-lang.org)
+- [cargo](https://crates.io/)
+
 ## Installation
 ```bash
 $ cargo install eureka
