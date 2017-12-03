@@ -11,6 +11,11 @@ It's developed _by_ and _for_ people who likes to live in the terminal.
 structure when you create an empty repository with a readme on GitHub, so it's easy to start using
 it.
 
+## Installation
+```bash
+$ cargo install eureka
+```
+
 ## Usage
 The first time you run `eureka` it will ask a few questions regarding your setup. This configuration
 will be stored in `~/.eureka/`.
