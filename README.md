@@ -38,7 +38,17 @@ When your idea is committed it's pushed to `origin/master`.
 
 ### Recommended alias
 An easy to remember alias for `eureka` is the word `idea`. This makes it easy to remember to use
-`eureka` to store your ideas. 
+`eureka` to store your ideas.
+
+**Zsh**
+```sh
+echo 'alias idea="eureka"' >> ~/.zshrc
+```
+
+**Bash**
+```sh
+echo 'alias idea="eureka"' >> ~/.bashrc
+```
 
 ## Improvements
 See [github issues](https://github.com/simeg/eureka/issues).
