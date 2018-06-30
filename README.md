@@ -1,4 +1,4 @@
-# eureka
+# eureka [![Crate Status](https://img.shields.io/crates/v/eureka.svg)](https://crates.io/crates/eureka)
 `eureka` is a CLI tool that allows you to quickly write down your idea with the editor of your
 choice, and then have the idea committed and pushed to your idea git repository.
 
