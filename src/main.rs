@@ -140,9 +140,9 @@ fn display_first_time_setup_banner() {
     println!("####                 First Time Setup                 ####");
     println!("##########################################################");
     println!();
-    println!("This tool requires you to have a repository with the a");
-    println!("README.md in the root folder. The markdown file is where");
-    println!("your ideas will be stored.");
+    println!("This tool requires you to have a repository with a README.md");
+    println!("in the root folder. The markdown file is where your ideas will");
+    println!("be stored.");
     println!();
 }
 
