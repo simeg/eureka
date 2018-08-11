@@ -2,14 +2,13 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
 use std::env;
-use std::io;
 use std::fs;
-use std::io::{Read, Write, Error};
+use std::io;
+use std::io::{Error, Read, Write};
 use std::process::Command;
 
-extern crate serde_json as json;
 extern crate serde;
-
+extern crate serde_json as json;
 
 #[macro_use]
 extern crate text_io;
@@ -147,22 +146,17 @@ fn get_commit_msg() -> String {
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
-    match Command::new(bin_path)
-        .arg(file_path)
-        .status() {
+    match Command::new(bin_path).arg(file_path).status() {
         Ok(_) => Ok(()),
         Err(e) => {
             println!(
                 "Unable to open file [{}] with editor binary at [{}]: {}",
-                file_path,
-                bin_path,
-                e
+                file_path, bin_path, e
             );
             Err(e)
         }
     }
 }
-
 
 /*
  * Git
@@ -188,7 +182,8 @@ fn git_add(repo_path: &String) -> Result<(), Error> {
         .arg(format!("--work-tree={}", repo_path))
         .arg("add")
         .arg("-A")
-        .status() {
+        .status()
+    {
         Ok(_) => Ok(()),
         Err(e) => {
             println!("Could not stage files to repo at [{}]: {}", repo_path, e);
@@ -205,10 +200,14 @@ fn git_commit(repo_path: &String, msg: String) -> Result<(), Error> {
         .arg("commit")
         .arg("-m")
         .arg(msg)
-        .status() {
+        .status()
+    {
         Ok(_) => Ok(()),
         Err(e) => {
-            println!("Could not commit new idea to repo at [{}]: {}", repo_path, e);
+            println!(
+                "Could not commit new idea to repo at [{}]: {}",
+                repo_path, e
+            );
             Err(e)
         }
     }
@@ -222,20 +221,19 @@ fn git_push(repo_path: &String) -> Result<(), Error> {
         .arg("push")
         .arg("origin")
         .arg("master")
-        .status() {
+        .status()
+    {
         Ok(_) => Ok(()),
         Err(e) => {
             println!(
                 "Could not push commit to remote 'origin' and \
-                branch 'master' in repo at [{}]: {}",
-                repo_path,
-                e
+                 branch 'master' in repo at [{}]: {}",
+                repo_path, e
             );
             Err(e)
         }
     }
 }
-
 
 /*
  * File and folder utils
@@ -254,16 +252,12 @@ fn read_from_config<T: ::serde::Deserialize>(key: String) -> Option<T> {
             match file.read_to_string(&mut raw) {
                 Ok(_) => match ::json::from_str::<T>(&raw) {
                     Ok(res) => Some(res),
-                    Err(e) => panic!(
-                        "Unable to serialize [{}] from JSON with error: {}",
-                        key,
-                        e
-                    )
+                    Err(e) => panic!("Unable to serialize [{}] from JSON with error: {}", key, e),
                 },
-                Err(_) => None
+                Err(_) => None,
             }
         }
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
@@ -271,15 +265,13 @@ fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json
     let location = get_config_location();
     let path = format!("{}/{}", location, key);
     match ::fs::File::create(path) {
-        Ok(mut file) => {
-            match ::json::to_string::<T>(&data) {
-                Ok(str_data) => {
-                    let _ = file.write(&str_data.into_bytes());
-                    Ok(data)
-                }
-                Err(e) => Err(e)
+        Ok(mut file) => match ::json::to_string::<T>(&data) {
+            Ok(str_data) => {
+                let _ = file.write(&str_data.into_bytes());
+                Ok(data)
             }
-        }
+            Err(e) => Err(e),
+        },
         Err(_) => {
             // TODO: Overwrite existing value, use additional param to decide it
             // File for [key] already exist, doing nothing
@@ -291,10 +283,9 @@ fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json
 fn get_config_location() -> String {
     match ::env::home_dir() {
         Some(location) => format!("{}/{}", location.display(), ".eureka/"),
-        None => panic!("Could not resolve your $HOME directory")
+        None => panic!("Could not resolve your $HOME directory"),
     }
 }
-
 
 /*
  * Borrow helpers
