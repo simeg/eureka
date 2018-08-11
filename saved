@@ -1,0 +1,23 @@
+
+enum Path {
+    ConfigRepo,
+    ConfigEditor,
+}
+
+impl Path {
+    fn value(&self) -> Option<String> {
+        match *self {
+            Path::ConfigRepo => get_config_path(),
+            Path::ConfigEditor => get_editor_path(),
+        }
+    }
+}
+
+fn get_config_path() -> Option<String> {
+    Option::from(String::from("TODO"))
+}
+
+fn get_editor_path() -> Option<String> {
+    Option::from(String::from("TODO"))
+}
+

@@ -45,8 +45,11 @@ fn main() {
         }
     }
 
-    if cli_flags.is_present("clear-repo") {
-        // Clear repo config value
+    if cli_flags.is_present("clear-editor") {
+        match rm_config_file(s("editor_path")) {
+            Ok(_) => {}
+            Err(e) => panic!(e),
+        }
     }
 
     let repo_path: String = match read_from_config_json(s("repo_path")) {
