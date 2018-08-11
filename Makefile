@@ -16,6 +16,9 @@ ci:
 clean:
 	rm -rf ./target
 
+clippy:
+	@$(CARGO) +nightly clippy
+
 fmt:
 	@$(CARGO) fmt
 
