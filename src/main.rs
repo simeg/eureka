@@ -267,7 +267,7 @@ fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json
     match ::fs::File::create(path) {
         Ok(mut file) => match ::json::to_string::<T>(&data) {
             Ok(str_data) => {
-                let _ = file.write(&str_data.into_bytes());
+                let _ = file.write(&str_data.replace("\"", "").into_bytes());
                 Ok(data)
             }
             Err(e) => Err(e),
