@@ -15,10 +15,6 @@ continue working.
 structure when you create an empty repository with a readme on GitHub, so it's easy to start using
 it. And since it's your own repository you can make it private to keep your ideas secret.
 
-### Dependencies
-- [rust](https://www.rust-lang.org)
-- [cargo](https://crates.io/)
-
 ## Installation
 ```bash
 $ cargo install eureka
