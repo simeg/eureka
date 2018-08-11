@@ -1,7 +1,4 @@
 pub mod file_handler {
-    extern crate serde;
-    extern crate serde_json as json;
-
     use std::error::Error;
     use std::fs;
     use std::io;
@@ -28,28 +25,6 @@ pub mod file_handler {
             contents.pop().expect("File is empty");
         }
         Ok(contents)
-    }
-
-    pub fn write_to_config_json<T: ::serde::Serialize>(
-        key: &str,
-        data: T,
-    ) -> Result<T, (json::Error)> {
-        let location = config_location();
-        let path = format!("{}/{}", location, key);
-        match ::fs::File::create(path) {
-            Ok(mut file) => match ::json::to_string::<T>(&data) {
-                Ok(str_data) => {
-                    let _ = file.write(&str_data.replace("\"", "").into_bytes());
-                    Ok(data)
-                }
-                Err(e) => Err(e),
-            },
-            Err(_) => {
-                // TODO: Overwrite existing value, use additional param to decide it
-                // File for [key] already exist, doing nothing
-                Ok(data)
-            }
-        }
     }
 
     pub fn write_to_config(file_name: String, value: String) -> io::Result<()> {

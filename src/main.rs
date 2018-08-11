@@ -7,9 +7,6 @@ use std::io;
 use std::io::{Error, Write};
 use std::process::Command;
 
-extern crate serde;
-extern crate serde_json as json;
-
 #[macro_use]
 extern crate text_io;
 
