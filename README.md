@@ -36,6 +36,13 @@ $ eureka
 
 When your idea is committed it's pushed to `origin/master`.
 
+### Flags
+
+```bash
+--clear-editor    Clear the stored path to your idea editor
+--clear-repo      Clear the stored path to your idea repo
+```
+
 ### Recommended alias
 An easy to remember alias for `eureka` is the word `idea`. This makes it easy to remember to use
 `eureka` to store your ideas.
@@ -52,6 +59,3 @@ echo 'alias idea="eureka"' >> ~/.bashrc
 
 ## Improvements
 See [github issues](https://github.com/simeg/eureka/issues).
-
-## License
-MIT
