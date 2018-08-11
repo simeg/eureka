@@ -29,7 +29,7 @@ pub mod file_handler {
         Ok(contents)
     }
 
-    pub fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json::Error)> {
+    pub fn write_to_config_json<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json::Error)> {
         let location = config_location();
         let path = format!("{}/{}", location, key);
         match ::fs::File::create(path) {
