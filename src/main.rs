@@ -74,7 +74,7 @@ fn main() {
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
 
-            match fh::write_to_config_json("repo_path", input_path) {
+            match fh::write_to_config(str("repo_path"), input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your repo path to disk: {}", e),
             }
@@ -116,7 +116,7 @@ fn main() {
             }
 
             let copy_input_path: String = input_path.clone();
-            match fh::write_to_config_json("editor_path", input_path) {
+            match fh::write_to_config(str("editor_path"), input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your editor path to disk: {}", e),
             }
@@ -169,9 +169,13 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
 }
 
 /*
- * Borrow helpers
+ * Helpers
 */
 
 fn s(string: &str) -> String {
     string.to_owned()
+}
+
+fn str(string: &str) -> String {
+    String::from(string)
 }

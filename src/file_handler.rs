@@ -2,11 +2,12 @@ pub mod file_handler {
     extern crate serde;
     extern crate serde_json as json;
 
+    use std::error::Error;
     use std::fs;
-    use std::fs::File;
     use std::io;
     use std::io::ErrorKind;
-    use std::io::{Error, Read, Write};
+    use std::io::{Read, Write};
+    use std::path::Path;
 
     pub fn path_exists(path: &str) -> bool {
         fs::metadata(path).is_ok()
@@ -18,7 +19,7 @@ pub mod file_handler {
             location = config_location(),
             path = path
         );
-        let mut file = File::open(&config_path)?;
+        let mut file = fs::File::open(&config_path)?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
@@ -29,7 +30,10 @@ pub mod file_handler {
         Ok(contents)
     }
 
-    pub fn write_to_config_json<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json::Error)> {
+    pub fn write_to_config_json<T: ::serde::Serialize>(
+        key: &str,
+        data: T,
+    ) -> Result<T, (json::Error)> {
         let location = config_location();
         let path = format!("{}/{}", location, key);
         match ::fs::File::create(path) {
@@ -45,6 +49,26 @@ pub mod file_handler {
                 // File for [key] already exist, doing nothing
                 Ok(data)
             }
+        }
+    }
+
+    pub fn write_to_config(file_name: String, value: String) -> io::Result<()> {
+        let path_to_write_to = format!(
+            "{location}/{file_name}",
+            location = config_location(),
+            file_name = file_name
+        );
+
+        let path = Path::new(&path_to_write_to);
+
+        let mut file = match fs::File::create(&path) {
+            Err(e) => panic!("Couldn't create {}: {}", path.display(), e.description()),
+            Ok(file) => file,
+        };
+
+        match file.write_all(value.as_bytes()) {
+            Err(e) => panic!("Couldn't write to {}: {}", path.display(), e.description()),
+            Ok(_) => Ok(()),
         }
     }
 
@@ -70,7 +94,7 @@ pub mod file_handler {
             fs::remove_file(&path)?;
             Ok(())
         } else {
-            let invalid_path = Error::new(
+            let invalid_path = io::Error::new(
                 ErrorKind::NotFound,
                 format!("Path does not exist: {}", path),
             );
