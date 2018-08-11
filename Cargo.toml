@@ -1,6 +1,6 @@
 [package]
 name = "eureka"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Simon Egersand <s.egersand@gmail.com>"]
 description = "CLI tool to input and store your ideas without leaving the terminal"
 categories = ["command-line-interface", "command-line-utilities", "productivity"]
@@ -16,9 +16,6 @@ exclude = [
 
 [dependencies]
 clap = "~2.27.0"
-serde = "~0.8"
-serde_derive = "~0.8"
-serde_json = "~0.8"
 text_io = "~0.1.5"
 clippy = {version = "0.0.175", optional = true}
 

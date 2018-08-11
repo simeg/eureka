@@ -33,7 +33,7 @@ lint:
 
 # TODO: In CI - verify that packaged .cargo file has reasonable size
 package:
-	@$(CARGO) package
+	@$(CARGO) package --allow-dirty
 
 publish:
 	@$(CARGO) publish
