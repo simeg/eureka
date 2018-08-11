@@ -4,7 +4,7 @@
 use std::env;
 use std::fs;
 use std::io;
-use std::io::{Error, Read, Write};
+use std::io::{Error, Write};
 use std::process::Command;
 
 extern crate serde;
@@ -18,10 +18,10 @@ extern crate clap;
 
 use clap::ArgMatches;
 use clap::{App, Arg};
+use file_handler::file_handler as fh;
 use git::git::git_commit_and_push;
-use std::fs::File;
-use std::io::ErrorKind;
 
+mod file_handler;
 mod git;
 
 fn main() {
@@ -42,29 +42,29 @@ fn main() {
         .get_matches();
 
     if cli_flags.is_present("clear-repo") {
-        match rm_config_file(s("repo_path")) {
+        match fh::rm_config_file(s("repo_path")) {
             Ok(_) => {}
             Err(e) => panic!(e),
         }
     }
 
     if cli_flags.is_present("clear-editor") {
-        match rm_config_file(s("editor_path")) {
+        match fh::rm_config_file(s("editor_path")) {
             Ok(_) => {}
             Err(e) => panic!(e),
         }
     }
 
-    let repo_path: String = match read_from_config(s("repo_path")) {
+    let repo_path: String = match fh::read_from_config(s("repo_path")) {
         Ok(file_path) => file_path,
         Err(_) => {
             display_first_time_setup_banner();
-            if !path_exists(&config_location()) {
-                match fs::create_dir_all(&config_location()) {
+            if !fh::path_exists(&fh::config_location()) {
+                match fs::create_dir_all(&fh::config_location()) {
                     Ok(_) => {}
                     Err(_) => panic!(
                         "Could not create dir at {} to store necessary config",
-                        config_location()
+                        fh::config_location()
                     ),
                 }
             }
@@ -74,14 +74,14 @@ fn main() {
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
 
-            match write_to_config("repo_path", input_path) {
+            match fh::write_to_config("repo_path", input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your repo path to disk: {}", e),
             }
         }
     };
 
-    let editor_path: String = match read_from_config(s("editor_path")) {
+    let editor_path: String = match fh::read_from_config(s("editor_path")) {
         Ok(file_path) => file_path,
         Err(_) => {
             println!("What editor do you want to use for writing down your ideas?");
@@ -111,12 +111,12 @@ fn main() {
                 }
             };
 
-            if !path_exists(&input_path) {
+            if !fh::path_exists(&input_path) {
                 panic!("Invalid editor path");
             }
 
             let copy_input_path: String = input_path.clone();
-            match write_to_config("editor_path", input_path) {
+            match fh::write_to_config("editor_path", input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your editor path to disk: {}", e),
             }
@@ -165,80 +165,6 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
             );
             Err(e)
         }
-    }
-}
-
-/*
- * File and folder utils
-*/
-
-fn path_exists(path: &str) -> bool {
-    fs::metadata(path).is_ok()
-}
-
-fn read_from_config(path: String) -> io::Result<String> {
-    let config_path = format!(
-        "{location}/{path}",
-        location = config_location(),
-        path = path
-    );
-    let mut file = File::open(&config_path)?;
-
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect(&format!("Unable to read file at: {}", config_path));
-    if contents.ends_with("\n") {
-        contents.pop().expect("File is empty");
-    }
-    Ok(contents)
-}
-
-fn write_to_config<T: ::serde::Serialize>(key: &str, data: T) -> Result<T, (json::Error)> {
-    let location = config_location();
-    let path = format!("{}/{}", location, key);
-    match ::fs::File::create(path) {
-        Ok(mut file) => match ::json::to_string::<T>(&data) {
-            Ok(str_data) => {
-                let _ = file.write(&str_data.replace("\"", "").into_bytes());
-                Ok(data)
-            }
-            Err(e) => Err(e),
-        },
-        Err(_) => {
-            // TODO: Overwrite existing value, use additional param to decide it
-            // File for [key] already exist, doing nothing
-            Ok(data)
-        }
-    }
-}
-
-fn config_location() -> String {
-    match ::env::home_dir() {
-        Some(location) => format!("{}/{}", location.display(), ".eureka"),
-        None => panic!("Could not resolve your $HOME directory"),
-    }
-}
-
-fn rm_config_file(file_name: String) -> io::Result<()> {
-    let config_path = format!(
-        "{location}/{file}",
-        location = config_location(),
-        file = file_name
-    );
-    rm_file(config_path)?;
-    Ok(())
-}
-
-fn rm_file(path: String) -> io::Result<()> {
-    if path_exists(&path) {
-        fs::remove_file(&path)?;
-        Ok(())
-    } else {
-        let invalid_path = Error::new(
-            ErrorKind::NotFound,
-            format!("Path does not exist: {}", path),
-        );
-        Err(invalid_path)
     }
 }
 
