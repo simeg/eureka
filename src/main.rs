@@ -52,9 +52,9 @@ fn main() {
         }
     }
 
-    let repo_path: String = match read_from_config_json(s("repo_path")) {
-        Some(file_path) => file_path,
-        None => {
+    let repo_path: String = match read_from_config(s("repo_path")) {
+        Ok(file_path) => file_path,
+        Err(_) => {
             display_first_time_setup_banner();
             if !path_exists(&config_location()) {
                 match fs::create_dir_all(&config_location()) {
@@ -78,9 +78,9 @@ fn main() {
         }
     };
 
-    let editor_path: String = match read_from_config_json(s("editor_path")) {
-        Some(file_path) => file_path,
-        None => {
+    let editor_path: String = match read_from_config(s("editor_path")) {
+        Ok(file_path) => file_path,
+        Err(_) => {
             println!("What editor do you want to use for writing down your ideas?");
             println!("1) vim (/usr/bin/vim)");
             println!("2) nano (/usr/bin/nano)");
@@ -274,10 +274,14 @@ fn read_from_config(path: String) -> io::Result<String> {
         location = config_location(),
         path = path
     );
-    let mut file = File::open(&config_path).expect(&format!("File not found: {}", &config_path));
+    let mut file = File::open(&config_path)?;
+
     let mut contents = String::new();
     file.read_to_string(&mut contents)
         .expect(&format!("Unable to read file at: {}", config_path));
+    if contents.ends_with("\n") {
+        contents.pop().expect("File is empty");
+    }
     Ok(contents)
 }
 
