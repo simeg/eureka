@@ -250,24 +250,6 @@ fn path_exists(path: &str) -> bool {
     fs::metadata(path).is_ok()
 }
 
-fn read_from_config_json<T: ::serde::Deserialize>(key: String) -> Option<T> {
-    let location = config_location();
-    let path = format!("{}/{}", location, key);
-    match ::fs::File::open(&path) {
-        Ok(mut file) => {
-            let mut raw = String::new();
-            match file.read_to_string(&mut raw) {
-                Ok(_) => match ::json::from_str::<T>(&raw) {
-                    Ok(res) => Some(res),
-                    Err(e) => panic!("Unable to serialize [{}] from JSON with error: {}", key, e),
-                },
-                Err(_) => None,
-            }
-        }
-        Err(_) => None,
-    }
-}
-
 fn read_from_config(path: String) -> io::Result<String> {
     let config_path = format!(
         "{location}/{path}",
