@@ -29,7 +29,7 @@ pub mod git {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                println!("Could not stage files to repo at [{}]: {}", repo_path, e);
+                eprintln!("Could not stage files to repo at [{}]: {}", repo_path, e);
                 Err(e)
             }
         }
@@ -45,7 +45,7 @@ pub mod git {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                println!(
+                eprintln!(
                     "Could not commit new idea to repo at [{}]: {}",
                     repo_path, e
                 );
@@ -64,7 +64,7 @@ pub mod git {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                println!(
+                eprintln!(
                     "Could not push commit to remote 'origin' and \
                      branch 'master' in repo at [{}]: {}",
                     repo_path, e

@@ -157,7 +157,7 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
     match Command::new(bin_path).arg(file_path).status() {
         Ok(_) => Ok(()),
         Err(e) => {
-            println!(
+            eprintln!(
                 "Unable to open file [{}] with editor binary at [{}]: {}",
                 file_path, bin_path, e
             );
