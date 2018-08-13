@@ -21,6 +21,7 @@ use git::git::git_commit_and_push;
 
 mod file_handler;
 mod git;
+mod utils;
 
 fn main() {
     let cli_flags: ArgMatches = App::new("eureka")
