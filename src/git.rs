@@ -1,6 +1,7 @@
 pub mod git {
     use std::io::Error;
     use std::process::Command;
+    use utils::utils;
 
     pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<(), ()> {
         // TODO: See how to chain these function calls
@@ -10,14 +11,16 @@ pub mod git {
         Ok(())
     }
 
-    fn get_git_path() -> Result<String, ()> {
-        // TODO: Do not have it hard-coded, look for it in common places
-        Ok(String::from("/usr/bin/git"))
+    fn git() -> String {
+        if utils::is_program_in_path("git") {
+            String::from("git")
+        } else {
+            panic!("Cannot locate executable - git - on your system")
+        }
     }
 
     fn git_add(repo_path: &String) -> Result<(), Error> {
-        let git = get_git_path().unwrap(); // TODO
-        match Command::new(git)
+        match Command::new(git())
             .arg(format!("--git-dir={}/.git/", repo_path))
             .arg(format!("--work-tree={}", repo_path))
             .arg("add")
@@ -33,8 +36,7 @@ pub mod git {
     }
 
     fn git_commit(repo_path: &String, msg: String) -> Result<(), Error> {
-        let git = get_git_path().unwrap(); // TODO
-        match Command::new(git)
+        match Command::new(git())
             .arg(format!("--git-dir={}/.git/", repo_path))
             .arg(format!("--work-tree={}", repo_path))
             .arg("commit")
@@ -54,8 +56,7 @@ pub mod git {
     }
 
     fn git_push(repo_path: &String) -> Result<(), Error> {
-        let git = get_git_path().unwrap(); // TODO
-        match Command::new(git)
+        match Command::new(git())
             .arg(format!("--git-dir={}/.git/", repo_path))
             .arg(format!("--work-tree={}", repo_path))
             .arg("push")
