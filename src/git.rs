@@ -21,8 +21,7 @@ pub mod git {
 
     fn git_add(repo_path: &String) -> Result<(), Error> {
         match Command::new(git())
-            .arg(format!("--git-dir={}/.git/", repo_path))
-            .arg(format!("--work-tree={}", repo_path))
+            .args(default_args(repo_path).iter())
             .arg("add")
             .arg("-A")
             .status()
@@ -37,8 +36,7 @@ pub mod git {
 
     fn git_commit(repo_path: &String, msg: String) -> Result<(), Error> {
         match Command::new(git())
-            .arg(format!("--git-dir={}/.git/", repo_path))
-            .arg(format!("--work-tree={}", repo_path))
+            .args(default_args(repo_path).iter())
             .arg("commit")
             .arg("-m")
             .arg(msg)
@@ -57,8 +55,7 @@ pub mod git {
 
     fn git_push(repo_path: &String) -> Result<(), Error> {
         match Command::new(git())
-            .arg(format!("--git-dir={}/.git/", repo_path))
-            .arg(format!("--work-tree={}", repo_path))
+            .args(default_args(repo_path).iter())
             .arg("push")
             .arg("origin")
             .arg("master")
@@ -74,5 +71,12 @@ pub mod git {
                 Err(e)
             }
         }
+    }
+
+    fn default_args(repo_path: &String) -> [String; 2] {
+        [
+            format!("--git-dir={}/.git/", repo_path),
+            format!("--work-tree={}", repo_path),
+        ]
     }
 }
