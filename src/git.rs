@@ -12,14 +12,6 @@ pub mod git {
         Ok(())
     }
 
-    fn git() -> String {
-        if utils::is_program_in_path("git") {
-            String::from("git")
-        } else {
-            panic!("Cannot locate executable - git - on your system")
-        }
-    }
-
     fn git_add(repo_path: &String) -> Result<()> {
         match Command::new(git())
             .args(default_args(repo_path).iter())
@@ -71,6 +63,14 @@ pub mod git {
                 );
                 Err(e)
             }
+        }
+    }
+
+    fn git() -> String {
+        if utils::is_program_in_path("git") {
+            String::from("git")
+        } else {
+            panic!("Cannot locate executable - git - on your system")
         }
     }
 
