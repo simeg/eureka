@@ -14,7 +14,7 @@ pub mod git {
         match Command::new(git())
             .args(default_args(repo_path).iter())
             .arg("add")
-            .arg("-A")
+            .arg("./README.md")
             .status()
         {
             Ok(_) => Ok(()),
