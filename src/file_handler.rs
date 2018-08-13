@@ -5,6 +5,7 @@ pub mod file_handler {
     use std::io::ErrorKind;
     use std::io::{Read, Write};
     use std::path;
+    use std::env;
 
     const CONFIG_REPO: &'static str = "repo_path";
     const CONFIG_EDITOR: &'static str = "editor_path";
@@ -24,7 +25,7 @@ pub mod file_handler {
     }
 
     fn config_path(file_name: String) -> String {
-        match ::env::home_dir() {
+        match env::home_dir() {
             Some(location) => format!(
                 "{home}/{eureka}/{file_name}",
                 home = location.display(),
@@ -67,7 +68,7 @@ pub mod file_handler {
     }
 
     pub fn config_location() -> String {
-        match ::env::home_dir() {
+        match env::home_dir() {
             Some(location) => format!("{}/{}", location.display(), ".eureka"),
             None => panic!("Could not resolve your $HOME directory"),
         }
