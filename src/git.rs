@@ -4,12 +4,10 @@ pub mod git {
     use std::process::Command;
     use utils::utils;
 
-    pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<(), ()> {
-        // TODO: See how to chain these function calls
-        git_add(repo_path).unwrap();
-        git_commit(repo_path, msg).unwrap();
-        git_push(repo_path).unwrap();
-        Ok(())
+    pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<()> {
+        git_add(repo_path)
+            .and(git_commit(repo_path, msg))
+            .and(git_push(repo_path))
     }
 
     fn git_add(repo_path: &String) -> Result<()> {
