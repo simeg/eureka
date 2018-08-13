@@ -1,5 +1,6 @@
 pub mod git {
     use std::io::Error;
+    use std::io::Result;
     use std::process::Command;
     use utils::utils;
 
@@ -19,7 +20,7 @@ pub mod git {
         }
     }
 
-    fn git_add(repo_path: &String) -> Result<(), Error> {
+    fn git_add(repo_path: &String) -> Result<()> {
         match Command::new(git())
             .args(default_args(repo_path).iter())
             .arg("add")
@@ -34,7 +35,7 @@ pub mod git {
         }
     }
 
-    fn git_commit(repo_path: &String, msg: String) -> Result<(), Error> {
+    fn git_commit(repo_path: &String, msg: String) -> Result<()> {
         match Command::new(git())
             .args(default_args(repo_path).iter())
             .arg("commit")
@@ -53,7 +54,7 @@ pub mod git {
         }
     }
 
-    fn git_push(repo_path: &String) -> Result<(), Error> {
+    fn git_push(repo_path: &String) -> Result<()> {
         match Command::new(git())
             .args(default_args(repo_path).iter())
             .arg("push")
