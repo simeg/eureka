@@ -1,5 +1,4 @@
 pub mod git {
-    use std::io::Error;
     use std::io::Result;
     use std::process::Command;
     use utils::utils;
