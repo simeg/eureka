@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
-use std::env;
 use std::fs;
 use std::io;
 use std::io::{Error, Write};
@@ -15,8 +14,9 @@ extern crate clap;
 
 use clap::ArgMatches;
 use clap::{App, Arg};
-use file_handler::file_handler as fh;
-use file_handler::file_handler::ConfigFile::*;
+use file_handler::ConfigFile::*;
+use file_handler::FileHandler;
+use file_handler::MyTrait;
 use git::git::git_commit_and_push;
 
 mod file_handler;
@@ -40,30 +40,32 @@ fn main() {
         )
         .get_matches();
 
+    let fh = FileHandler {};
+
     if cli_flags.is_present("clear-repo") {
-        match fh::rm_file(Repo.name()) {
+        match fh.rm_file(Repo) {
             Ok(_) => {}
             Err(e) => panic!(e),
         }
     }
 
     if cli_flags.is_present("clear-editor") {
-        match fh::rm_file(Editor.name()) {
+        match fh.rm_file(Editor) {
             Ok(_) => {}
             Err(e) => panic!(e),
         }
     }
 
-    let repo_path: String = match fh::read_from_config(Repo.name()) {
+    let repo_path: String = match fh.read_from_config(Repo) {
         Ok(file_path) => file_path,
         Err(_) => {
             display_first_time_setup_banner();
-            if !fh::path_exists(&fh::config_location()) {
-                match fs::create_dir_all(&fh::config_location()) {
+            if !fh.path_exists(&fh.config_location()) {
+                match fs::create_dir_all(&fh.config_location()) {
                     Ok(_) => {}
                     Err(_) => panic!(
                         "Could not create dir at {} to store necessary config",
-                        fh::config_location()
+                        fh.config_location()
                     ),
                 }
             }
@@ -73,14 +75,14 @@ fn main() {
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
 
-            match fh::write_to_config(Repo.name(), input_path) {
+            match fh.write_to_config(Repo, input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your repo path to disk: {}", e),
             }
         }
     };
 
-    let editor_path: String = match fh::read_from_config(Editor.name()) {
+    let editor_path: String = match fh.read_from_config(Editor) {
         Ok(file_path) => file_path,
         Err(_) => {
             println!("What editor do you want to use for writing down your ideas?");
@@ -110,12 +112,12 @@ fn main() {
                 }
             };
 
-            if !fh::path_exists(&input_path) {
+            if !fh.path_exists(&input_path) {
                 panic!("Invalid editor path");
             }
 
             let copy_input_path: String = input_path.clone();
-            match fh::write_to_config(Editor.name(), input_path) {
+            match fh.write_to_config(Editor, input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your editor path to disk: {}", e),
             }
