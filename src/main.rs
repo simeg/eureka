@@ -150,8 +150,6 @@ fn display_first_time_setup_banner() {
 fn get_commit_msg() -> String {
     println!("Idea commit subject: ");
     let mut input = String::new();
-    // The library text_io doesn't read input
-    // if it has any whitespace in it
     io::stdin().read_line(&mut input).unwrap();
     input
 }
