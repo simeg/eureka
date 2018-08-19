@@ -169,7 +169,3 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
 fn s(string: &str) -> String {
     string.to_owned()
 }
-
-fn str(string: &str) -> String {
-    String::from(string)
-}
