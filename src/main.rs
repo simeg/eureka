@@ -1,7 +1,6 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
-use std::fs;
 use std::io;
 use std::io::{Error, Write};
 use std::process::Command;
@@ -15,8 +14,9 @@ extern crate clap;
 use clap::ArgMatches;
 use clap::{App, Arg};
 use file_handler::ConfigFile::*;
+use file_handler::ConfigManagement;
 use file_handler::FileHandler;
-use file_handler::MyTrait;
+use file_handler::FileManagement;
 use git::git::git_commit_and_push;
 
 mod file_handler;
@@ -60,14 +60,9 @@ fn main() {
         Ok(file_path) => file_path,
         Err(_) => {
             display_first_time_setup_banner();
-            if !fh.path_exists(&fh.config_location()) {
-                match fs::create_dir_all(&fh.config_location()) {
-                    Ok(_) => {}
-                    Err(_) => panic!(
-                        "Could not create dir at {} to store necessary config",
-                        fh.config_location()
-                    ),
-                }
+            if !fh.config_dir_exists() {
+                fh.config_dir_create()
+                    .expect("Unable to create dir to store config");
             }
 
             print!("Absolute path to your idea repo: ");
