@@ -38,12 +38,12 @@ impl ConfigManagement for FileHandler {
     }
 
     fn config_read(&self, file: ConfigFile) -> io::Result<String> {
-        let file_name = config_name(file);
-        let mut file = fs::File::open(&file_name)?;
+        let config_file_path = config_path(file);
+        let mut file = fs::File::open(&config_file_path)?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .expect(&format!("Unable to read file at: {}", file_name));
+            .expect(&format!("Unable to read file at: {}", config_file_path));
         if contents.ends_with("\n") {
             contents.pop().expect("File is empty");
         }
@@ -52,8 +52,8 @@ impl ConfigManagement for FileHandler {
     }
 
     fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()> {
-        let file_name: String = config_name(file);
-        let path = path::Path::new(&file_name);
+        let config_file_path = config_path(file);
+        let path = path::Path::new(&config_file_path);
 
         let mut file = match fs::File::create(&path) {
             Err(e) => panic!("Couldn't create {}: {}", path.display(), e.description()),
@@ -73,28 +73,26 @@ impl FileManagement for FileHandler {
     }
 
     fn file_rm(&self, file: ConfigFile) -> io::Result<()> {
-        let path: String = config_file_path(config_name(file));
-        if self.file_exists(&path) {
-            fs::remove_file(&path)?;
+        let config_file_path = config_path(file);
+        if self.file_exists(&config_file_path) {
+            fs::remove_file(&config_file_path)?;
             Ok(())
         } else {
             let invalid_path = io::Error::new(
                 ErrorKind::NotFound,
-                format!("Path does not exist: {}", path),
+                format!("Path does not exist: {}", config_file_path),
             );
             Err(invalid_path)
         }
     }
 }
 
-fn config_name(file: ConfigFile) -> String {
-    match file {
-        ConfigFile::Repo => config_file_path(CONFIG_REPO.to_string()),
-        ConfigFile::Editor => config_file_path(CONFIG_EDITOR.to_string()),
-    }
-}
+fn config_path(file: ConfigFile) -> String {
+    let file_name = match file {
+        ConfigFile::Repo => CONFIG_REPO.to_string(),
+        ConfigFile::Editor => CONFIG_EDITOR.to_string(),
+    };
 
-fn config_file_path(file_name: String) -> String {
     match env::home_dir() {
         Some(location) => format!(
             "{home}/{eureka}/{file_name}",
