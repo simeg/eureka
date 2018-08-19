@@ -43,20 +43,20 @@ fn main() {
     let fh = FileHandler {};
 
     if cli_flags.is_present("clear-repo") {
-        match fh.rm_file(Repo) {
+        match fh.file_rm(Repo) {
             Ok(_) => {}
             Err(e) => panic!(e),
         }
     }
 
     if cli_flags.is_present("clear-editor") {
-        match fh.rm_file(Editor) {
+        match fh.file_rm(Editor) {
             Ok(_) => {}
             Err(e) => panic!(e),
         }
     }
 
-    let repo_path: String = match fh.read_from_config(Repo) {
+    let repo_path: String = match fh.config_read(Repo) {
         Ok(file_path) => file_path,
         Err(_) => {
             display_first_time_setup_banner();
@@ -70,14 +70,14 @@ fn main() {
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
 
-            match fh.write_to_config(Repo, input_path) {
+            match fh.config_write(Repo, input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your repo path to disk: {}", e),
             }
         }
     };
 
-    let editor_path: String = match fh.read_from_config(Editor) {
+    let editor_path: String = match fh.config_read(Editor) {
         Ok(file_path) => file_path,
         Err(_) => {
             println!("What editor do you want to use for writing down your ideas?");
@@ -107,12 +107,12 @@ fn main() {
                 }
             };
 
-            if !fh.path_exists(&input_path) {
+            if !fh.file_exists(&input_path) {
                 panic!("Invalid editor path");
             }
 
             let copy_input_path: String = input_path.clone();
-            match fh.write_to_config(Editor, input_path) {
+            match fh.config_write(Editor, input_path) {
                 Ok(_) => copy_input_path,
                 Err(e) => panic!("Unable to write your editor path to disk: {}", e),
             }

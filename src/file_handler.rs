@@ -19,13 +19,13 @@ pub struct FileHandler;
 pub trait ConfigManagement {
     fn config_dir_create(&self) -> io::Result<()>;
     fn config_dir_exists(&self) -> bool;
-    fn read_from_config(&self, file: ConfigFile) -> io::Result<String>;
-    fn write_to_config(&self, file: ConfigFile, value: String) -> io::Result<()>;
+    fn config_read(&self, file: ConfigFile) -> io::Result<String>;
+    fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()>;
 }
 
 pub trait FileManagement {
-    fn path_exists(&self, path: &str) -> bool;
-    fn rm_file(&self, file: ConfigFile) -> io::Result<()>;
+    fn file_exists(&self, path: &str) -> bool;
+    fn file_rm(&self, file: ConfigFile) -> io::Result<()>;
 }
 
 impl ConfigManagement for FileHandler {
@@ -34,10 +34,10 @@ impl ConfigManagement for FileHandler {
     }
 
     fn config_dir_exists(&self) -> bool {
-        self.path_exists(&config_dir_path())
+        self.file_exists(&config_dir_path())
     }
 
-    fn read_from_config(&self, file: ConfigFile) -> io::Result<String> {
+    fn config_read(&self, file: ConfigFile) -> io::Result<String> {
         let file_name = config_name(file);
         let mut file = fs::File::open(&file_name)?;
 
@@ -51,7 +51,7 @@ impl ConfigManagement for FileHandler {
         Ok(contents)
     }
 
-    fn write_to_config(&self, file: ConfigFile, value: String) -> io::Result<()> {
+    fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()> {
         let file_name: String = config_name(file);
         let path = path::Path::new(&file_name);
 
@@ -68,13 +68,13 @@ impl ConfigManagement for FileHandler {
 }
 
 impl FileManagement for FileHandler {
-    fn path_exists(&self, path: &str) -> bool {
+    fn file_exists(&self, path: &str) -> bool {
         fs::metadata(path).is_ok()
     }
 
-    fn rm_file(&self, file: ConfigFile) -> io::Result<()> {
+    fn file_rm(&self, file: ConfigFile) -> io::Result<()> {
         let path: String = config_file_path(config_name(file));
-        if self.path_exists(&path) {
+        if self.file_exists(&path) {
             fs::remove_file(&path)?;
             Ok(())
         } else {
