@@ -20,9 +20,9 @@ pub trait MyTrait {
     fn config_name(&self, file: ConfigFile) -> String;
     fn config_path(&self, file_name: String) -> String;
     fn config_location(&self) -> String;
-    fn path_exists(&self, path: &str) -> bool;
     fn read_from_config(&self, file: ConfigFile) -> io::Result<String>;
     fn write_to_config(&self, file: ConfigFile, value: String) -> io::Result<()>;
+    fn path_exists(&self, path: &str) -> bool;
     fn rm_file(&self, file: ConfigFile) -> io::Result<()>;
 }
 
@@ -53,10 +53,6 @@ impl MyTrait for FileHandler {
         }
     }
 
-    fn path_exists(&self, path: &str) -> bool {
-        fs::metadata(path).is_ok()
-    }
-
     fn read_from_config(&self, file: ConfigFile) -> io::Result<String> {
         let file_name = self.config_name(file);
         let mut file = fs::File::open(&file_name)?;
@@ -84,6 +80,10 @@ impl MyTrait for FileHandler {
             Err(e) => panic!("Couldn't write to {}: {}", path.display(), e.description()),
             Ok(_) => Ok(()),
         }
+    }
+
+    fn path_exists(&self, path: &str) -> bool {
+        fs::metadata(path).is_ok()
     }
 
     fn rm_file(&self, file: ConfigFile) -> io::Result<()> {
