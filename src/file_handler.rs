@@ -123,8 +123,8 @@ fn config_dir_path() -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::io;
     use file_handler::FileSystem;
+    use std::io;
 
     struct MockFileSystem;
 
