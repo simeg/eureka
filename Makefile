@@ -10,7 +10,7 @@ check:
 	$(CARGO) check --release
 
 # ci: install-rustfmt lint check test
-ci: lint test
+ci: lint build test
 	@echo "Everything's OK 🤘"
 
 clean:
