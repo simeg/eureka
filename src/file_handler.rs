@@ -16,6 +16,16 @@ pub enum ConfigFile {
 
 pub struct FileHandler;
 
+pub trait FileSystem {
+    fn create_dir(&self, path: &str) -> io::Result<()>;
+}
+
+impl FileSystem for FileHandler {
+    fn create_dir(&self, path: &str) -> io::Result<()> {
+        fs::create_dir_all(&path)
+    }
+}
+
 pub trait ConfigManagement {
     fn config_dir_create(&self) -> io::Result<()>;
     fn config_dir_exists(&self) -> bool;
@@ -108,5 +118,27 @@ fn config_dir_path() -> String {
     match env::home_dir() {
         Some(home_dir) => format!("{}/{}", home_dir.display(), ".eureka"),
         None => panic!("Could not resolve your $HOME directory"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io;
+    use file_handler::FileSystem;
+
+    struct MockFileSystem;
+
+    impl FileSystem for MockFileSystem {
+        fn create_dir(&self, _path: &str) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn it_works() {
+        let _fs = MockFileSystem {};
+        let actual = _fs.create_dir("irrelevant");
+        println!("{:?}", actual);
+        assert!(actual.is_ok());
     }
 }
