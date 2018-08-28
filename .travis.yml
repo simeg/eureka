@@ -1,0 +1,29 @@
+language: rust
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+before_script:
+  - rustup toolchain install nightly
+  - rustup component add --toolchain nightly rustfmt-preview
+  - which rustfmt || cargo install --force rustfmt-nightly
+
+cache:
+  cargo: true
+
+script: make ci
+
+env:
+  global:
+  - RUSTFLAGS="-C link-dead-code"
+
+matrix:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+
+notifications:
+  email:
+    on_success: never

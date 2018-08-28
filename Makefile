@@ -10,8 +10,8 @@ check:
 	$(CARGO) check --release
 
 # ci: install-rustfmt lint check test
-ci:
-	@echo "Not implemented yet"
+ci: lint build test
+	@echo "Everything's OK 🤘"
 
 clean:
 	rm -rf ./target
@@ -31,7 +31,8 @@ link:
 	@ln -sf ./target/debug/$(BIN_NAME) .
 
 lint:
-	cargo fmt --all -- --check
+	@$(CARGO) +nightly fmt --all -- --check
+	@echo "Lint OK 👌"
 
 # TODO: In CI - verify that packaged .cargo file has reasonable size
 package:
@@ -48,3 +49,4 @@ run:
 
 test:
 	@$(CARGO) test -- --nocapture
+	@echo "Tests OK 👌"
