@@ -19,7 +19,9 @@ clean:
 clippy:
 	@$(CARGO) +nightly clippy
 
-fmt:
+fmt: format
+
+format:
 	@$(CARGO) fmt
 
 install:

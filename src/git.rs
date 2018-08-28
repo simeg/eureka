@@ -1,42 +1,32 @@
 pub mod git {
-    use std::io::Error;
+    use std::io::Result;
     use std::process::Command;
+    use utils::utils;
 
-    pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<(), ()> {
-        // TODO: See how to chain these function calls
-        git_add(repo_path).unwrap();
-        git_commit(repo_path, msg).unwrap();
-        git_push(repo_path).unwrap();
-        Ok(())
+    pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<()> {
+        git_add(repo_path)
+            .and(git_commit(repo_path, msg))
+            .and(git_push(repo_path))
     }
 
-    fn get_git_path() -> Result<String, ()> {
-        // TODO: Do not have it hard-coded, look for it in common places
-        Ok(String::from("/usr/bin/git"))
-    }
-
-    fn git_add(repo_path: &String) -> Result<(), Error> {
-        let git = get_git_path().unwrap(); // TODO
-        match Command::new(git)
-            .arg(format!("--git-dir={}/.git/", repo_path))
-            .arg(format!("--work-tree={}", repo_path))
+    fn git_add(repo_path: &String) -> Result<()> {
+        match Command::new(git())
+            .args(default_args(repo_path).iter())
             .arg("add")
-            .arg("-A")
+            .arg("./README.md")
             .status()
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                println!("Could not stage files to repo at [{}]: {}", repo_path, e);
+                eprintln!("Could not stage files to repo at [{}]: {}", repo_path, e);
                 Err(e)
             }
         }
     }
 
-    fn git_commit(repo_path: &String, msg: String) -> Result<(), Error> {
-        let git = get_git_path().unwrap(); // TODO
-        match Command::new(git)
-            .arg(format!("--git-dir={}/.git/", repo_path))
-            .arg(format!("--work-tree={}", repo_path))
+    fn git_commit(repo_path: &String, msg: String) -> Result<()> {
+        match Command::new(git())
+            .args(default_args(repo_path).iter())
             .arg("commit")
             .arg("-m")
             .arg(msg)
@@ -44,7 +34,7 @@ pub mod git {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                println!(
+                eprintln!(
                     "Could not commit new idea to repo at [{}]: {}",
                     repo_path, e
                 );
@@ -53,11 +43,9 @@ pub mod git {
         }
     }
 
-    fn git_push(repo_path: &String) -> Result<(), Error> {
-        let git = get_git_path().unwrap(); // TODO
-        match Command::new(git)
-            .arg(format!("--git-dir={}/.git/", repo_path))
-            .arg(format!("--work-tree={}", repo_path))
+    fn git_push(repo_path: &String) -> Result<()> {
+        match Command::new(git())
+            .args(default_args(repo_path).iter())
             .arg("push")
             .arg("origin")
             .arg("master")
@@ -65,7 +53,7 @@ pub mod git {
         {
             Ok(_) => Ok(()),
             Err(e) => {
-                println!(
+                eprintln!(
                     "Could not push commit to remote 'origin' and \
                      branch 'master' in repo at [{}]: {}",
                     repo_path, e
@@ -73,5 +61,20 @@ pub mod git {
                 Err(e)
             }
         }
+    }
+
+    fn git() -> String {
+        if utils::is_program_in_path("git") {
+            String::from("git")
+        } else {
+            panic!("Cannot locate executable - git - on your system")
+        }
+    }
+
+    fn default_args(repo_path: &String) -> [String; 2] {
+        [
+            format!("--git-dir={}/.git/", repo_path),
+            format!("--work-tree={}", repo_path),
+        ]
     }
 }
