@@ -10,7 +10,8 @@ check:
 	$(CARGO) check --release
 
 # ci: install-rustfmt lint check test
-ci: lint
+ci: lint test
+	@echo "Everything's OK 🤘"
 
 clean:
 	rm -rf ./target
@@ -48,3 +49,4 @@ run:
 
 test:
 	@$(CARGO) test -- --nocapture
+	@echo "Tests OK 👌"
