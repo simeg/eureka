@@ -30,7 +30,8 @@ link:
 	@ln -sf ./target/debug/$(BIN_NAME) .
 
 lint:
-	cargo fmt --all -- --check
+	@$(CARGO) +nightly fmt --all -- --check
+	@echo "Lint OK 👌"
 
 # TODO: In CI - verify that packaged .cargo file has reasonable size
 package:

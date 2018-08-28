@@ -6,6 +6,11 @@ rust:
   - beta
   - nightly
 
+before_script:
+  - rustup toolchain install nightly
+  - rustup component add --toolchain nightly rustfmt-preview
+  - which rustfmt || cargo install --force rustfmt-nightly
+
 cache:
   cargo: true
 
