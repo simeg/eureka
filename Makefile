@@ -10,8 +10,7 @@ check:
 	$(CARGO) check --release
 
 # ci: install-rustfmt lint check test
-ci:
-	@echo "Not implemented yet"
+ci: lint
 
 clean:
 	rm -rf ./target

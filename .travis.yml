@@ -1,0 +1,25 @@
+language: rust
+sudo: required
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+cache:
+  cargo: true
+
+script: make ci
+
+env:
+  global:
+  - RUSTFLAGS="-C link-dead-code"
+
+matrix:
+  allow_failures:
+    - rust: nightly
+  fast_finish: true
+
+notifications:
+  email:
+    on_success: never
