@@ -1,4 +1,6 @@
-use std::env;
+extern crate dirs;
+
+use self::dirs::home_dir;
 use std::error::Error;
 use std::fs;
 use std::io;
@@ -104,7 +106,7 @@ fn config_path(file: ConfigFile) -> String {
         ConfigFile::Editor => CONFIG_EDITOR.to_string(),
     };
 
-    match env::home_dir() {
+    match home_dir() {
         Some(location) => format!(
             "{home}/{eureka}/{file_name}",
             home = location.display(),
@@ -116,7 +118,7 @@ fn config_path(file: ConfigFile) -> String {
 }
 
 fn config_dir_path() -> String {
-    match env::home_dir() {
+    match home_dir() {
         Some(home_dir) => format!("{}/{}", home_dir.display(), ".eureka"),
         None => panic!("Could not resolve your $HOME directory"),
     }
@@ -128,7 +130,6 @@ mod tests {
     use file_handler::ConfigManagement;
     use file_handler::FileManagement;
     use file_handler::FileSystem;
-    use std::fs;
     use std::io;
 
     struct MockFileSystem;
@@ -160,8 +161,8 @@ mod tests {
     }
 
     impl FileManagement for MockFileHandler {
-        fn file_exists(&self, path: &str) -> bool {
-            fs::metadata(path).is_ok()
+        fn file_exists(&self, _path: &str) -> bool {
+            true
         }
 
         fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
@@ -172,7 +173,7 @@ mod tests {
     #[test]
     fn create_dir() {
         let _fs = MockFileSystem {};
-        let actual = _fs.create_dir("./test");
+        let actual = _fs.create_dir("irrelevant");
         println!("{:?}", actual);
         assert!(actual.is_ok());
     }
