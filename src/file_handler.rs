@@ -143,16 +143,15 @@ mod tests {
 
     impl ConfigManagement for MockFileHandler {
         fn config_dir_create(&self) -> io::Result<String> {
-            Ok(config_dir_path())
+            Ok(String::from("irrelevant"))
         }
 
         fn config_dir_exists(&self) -> bool {
-            self.file_exists(&config_dir_path())
+            self.file_exists(&String::from("irrelevant"))
         }
 
         fn config_read(&self, _file: ConfigFile) -> io::Result<String> {
-            let contents = String::from("~/idea");
-            Ok(contents)
+            Ok(String::from("irrelevant"))
         }
 
         fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
@@ -169,50 +168,39 @@ mod tests {
             Ok(())
         }
     }
-    // test for FileSystem methods
+
     #[test]
-    fn create_dir() {
-        let _fs = MockFileSystem {};
-        let actual = _fs.create_dir("irrelevant");
-        println!("{:?}", actual);
-        assert!(actual.is_ok());
+    fn file_system_create_dir_is_ok() {
+        let fs = MockFileSystem {};
+        let result = fs.create_dir("irrelevant");
+        assert!(result.is_ok());
     }
 
-    // tests for FileHandler methods
     #[test]
-    fn create_config_dir() {
+    fn file_handler_create_config_dir_is_ok() {
         let fh = MockFileHandler {};
-        let dir = fh.config_dir_create().unwrap();
-        assert_eq!(fh.file_exists(&dir), true);
+        let result = fh.config_dir_create();
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn check_config_dir_exists() {
+    fn file_handler_write_config_file_is_ok() {
         let fh = MockFileHandler {};
-        let dir = config_dir_path();
-        assert_eq!(fh.file_exists(&dir), true);
+        let result = fh.config_write(ConfigFile::Repo, String::from("irrelevant"));
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn write_config_file() {
+    fn file_handler_read_config_file_is_ok() {
         let fh = MockFileHandler {};
-        let repo = String::from("~/idea");
-        let write = fh.config_write(ConfigFile::Repo, repo);
-        assert!(write.is_ok());
+        let result = fh.config_read(ConfigFile::Repo);
+        assert!(result.is_ok());
     }
 
     #[test]
-    fn read_config_file() {
+    fn file_handler_delete_config_file_is_ok() {
         let fh = MockFileHandler {};
-        let repo = fh.config_read(ConfigFile::Repo).unwrap();
-        assert_eq!(repo, "~/idea");
+        let result = fh.file_rm(ConfigFile::Repo);
+        assert!(result.is_ok());
     }
-
-    #[test]
-    fn delete_config_file() {
-        let fh = MockFileHandler {};
-        let delete = fh.file_rm(ConfigFile::Repo);
-        assert!(delete.is_ok());
-    }
-
 }
