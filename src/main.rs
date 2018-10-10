@@ -32,11 +32,13 @@ fn main() {
             Arg::with_name("clear-repo")
                 .long("clear-repo")
                 .help("Clear the stored path to your idea repo"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("clear-editor")
                 .long("clear-editor")
                 .help("Clear the stored path to your idea editor"),
-        ).get_matches();
+        )
+        .get_matches();
 
     let fh = FileHandler {};
 
