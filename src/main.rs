@@ -11,8 +11,11 @@ extern crate text_io;
 #[macro_use]
 extern crate clap;
 
+extern crate dialoguer;
+
 use clap::ArgMatches;
 use clap::{App, Arg};
+use dialoguer::Select;
 use file_handler::ConfigFile::*;
 use file_handler::ConfigManagement;
 use file_handler::FileHandler;
@@ -80,21 +83,23 @@ fn main() {
     let editor_path: String = match fh.config_read(Editor) {
         Ok(file_path) => file_path,
         Err(_) => {
-            println!("What editor do you want to use for writing down your ideas?");
-            println!("1) vim (/usr/bin/vim)");
-            println!("2) nano (/usr/bin/nano)");
-            println!("3) Other (provide path to binary)");
-            println!();
-            print!("Alternative: ");
-            io::stdout().flush().unwrap();
+            let selections = &[
+                "1) vim (/usr/bin/vim)",
+                "2) nano (/usr/bin/nano)",
+                "3) Other (provide path to binary)",
+            ];
 
-            let input_choice: String = read!();
-            // Cast to int to be able to match
-            let editor_choice: u32 = input_choice.parse::<u32>().unwrap();
-            let input_path: String = match editor_choice {
-                1 => s("/usr/bin/vim"),
-                2 => s("/usr/bin/nano"),
-                3 => {
+            println!("What editor do you want to use for writing down your ideas?");
+            let index = Select::new()
+                .default(0)
+                .items(selections)
+                .interact()
+                .unwrap();
+
+            let input_path: String = match index {
+                0 => s("/usr/bin/vim"),
+                1 => s("/usr/bin/nano"),
+                2 => {
                     print!("Path to editor binary: ");
                     io::stdout().flush().unwrap();
                     let editor_bin_path: String = read!();
