@@ -56,9 +56,14 @@ fn main() {
         }
     }
 
+    // If first time setup is carried out do not
+    // require an idea to be written down.
+    let mut first_time: bool = false;
+
     let repo_path: String = match fh.config_read(Repo) {
         Ok(file_path) => file_path,
         Err(_) => {
+            first_time = true;
             display_first_time_setup_banner();
             if !fh.config_dir_exists() {
                 fh.config_dir_create()
@@ -119,15 +124,19 @@ fn main() {
         }
     };
 
-    let commit_msg: String = get_commit_msg();
-    let readme_path: String = format!("{}/README.md", repo_path);
+    if !first_time {
+        let commit_msg: String = get_commit_msg();
+        let readme_path: String = format!("{}/README.md", repo_path);
 
-    match open_editor(&editor_path, &readme_path) {
-        Ok(_) => {
-            let _ = git_commit_and_push(&repo_path, commit_msg);
-        }
-        Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
-    };
+        match open_editor(&editor_path, &readme_path) {
+            Ok(_) => {
+                let _ = git_commit_and_push(&repo_path, commit_msg);
+            }
+            Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
+        };
+    } else {
+        println!("First time setup complete. Happy ideation!")
+    }
 }
 
 fn display_first_time_setup_banner() {
@@ -138,7 +147,10 @@ fn display_first_time_setup_banner() {
     println!();
     println!("This tool requires you to have a repository with a README.md");
     println!("in the root folder. The markdown file is where your ideas will");
-    println!("be stored.");
+    println!("be stored. ");
+    println!();
+    println!("Once first time setup has completed, simply run Eureka again");
+    println!("to begin writing down ideas.");
     println!();
 }
 
