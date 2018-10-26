@@ -19,6 +19,7 @@ clap = "~2.27.0"
 text_io = "~0.1.5"
 clippy = {version = "0.0.175", optional = true}
 dirs = "1.0.4"
+dialoguer = "0.1.0"
 
 [features]
 default = []
