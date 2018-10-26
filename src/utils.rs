@@ -13,4 +13,9 @@ pub mod utils {
         }
         false
     }
+
+    pub fn format_idea_filename(idea: &String) -> String  {
+        idea.replace(" ", "_")
+            .to_uppercase()
+    }
 }

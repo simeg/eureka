@@ -132,8 +132,9 @@ fn main() {
     if !first_time {
         let commit_msg: String = get_commit_msg();
         let readme_path: String = format!("{}/README.md", repo_path);
+        let idea_path: String = format!("{}/{}.md", repo_path, utils::utils::format_idea_filename(&commit_msg));
 
-        match open_editor(&editor_path, &readme_path) {
+        match open_editor(&editor_path, &idea_path) {
             Ok(_) => {
                 let _ = git_commit_and_push(&repo_path, commit_msg);
             }
