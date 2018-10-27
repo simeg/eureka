@@ -138,7 +138,7 @@ fn main() {
         // If getting the idea path failed then panic.
         let (idea_path, is_new_idea) = match idea_path {
             Ok((path, is_new_idea)) => (path, is_new_idea),
-            Err(e) => panic!("Could not get idea_path : {}", e)
+            Err(e) => panic!("Could not get idea_path : {}", e),
         };
 
         match open_editor(&editor_path, &idea_path) {
@@ -146,11 +146,11 @@ fn main() {
                 // If the idea already exists we dont need a new entry in the readme
                 if is_new_idea {
                     fh.add_idea_to_readme(&readme_path, &commit_msg, &repo_path)
-                      .expect(&format!("Could not write to {}", &readme_path));
+                        .expect(&format!("Could not write to {}", &readme_path));
                 }
 
                 let _ = git_commit_and_push(&repo_path, commit_msg);
-            },
+            }
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     } else {
@@ -177,7 +177,7 @@ fn get_commit_msg() -> String {
     println!("Idea commit subject: ");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    input.replace("\n","")
+    input.replace("\n", "")
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {

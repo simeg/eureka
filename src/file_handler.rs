@@ -1,6 +1,7 @@
 extern crate dirs;
 
 use self::dirs::home_dir;
+use git::git;
 use std::error::Error;
 use std::fs;
 use std::io;
@@ -8,7 +9,6 @@ use std::io::ErrorKind;
 use std::io::{Read, Write};
 use std::path;
 use utils::utils;
-use git::git;
 
 const CONFIG_REPO: &'static str = "repo_path";
 const CONFIG_EDITOR: &'static str = "editor_path";
@@ -44,7 +44,12 @@ pub trait FileManagement {
 
 pub trait IdeaManagement {
     fn get_idea_path(&self, repo_path: &String, path: &String) -> io::Result<(String, bool)>;
-    fn add_idea_to_readme(&self, readme_path: &String, commit_msg: &String, repo_path: &String) -> io::Result<()>;
+    fn add_idea_to_readme(
+        &self,
+        readme_path: &String,
+        commit_msg: &String,
+        repo_path: &String,
+    ) -> io::Result<()>;
 }
 
 impl IdeaManagement for FileHandler {
@@ -56,9 +61,10 @@ impl IdeaManagement for FileHandler {
             let result = fs::create_dir(&folder_path);
             if result.is_err() {
                 let error = result.unwrap_err();
-                return Err(io::Error::new(error.kind(), format!("Could not create directory {} : {}",
-                                                  folder_path,
-                                                  error)))
+                return Err(io::Error::new(
+                    error.kind(),
+                    format!("Could not create directory {} : {}", folder_path, error),
+                ));
             }
         }
 
@@ -66,37 +72,53 @@ impl IdeaManagement for FileHandler {
             match fs::File::create(&path) {
                 Ok(_) => Ok((path, true)),
                 // Re-constructing the error like this allows us to add our own text to the message.
-                Err(e) => Err(io::Error::new(e.kind(), format!("Could not create file {}/{}.md : {}",
-                                                  repo_path,
-                                                  utils::format_idea_filename(&path),
-                                                  e)))
+                Err(e) => Err(io::Error::new(
+                    e.kind(),
+                    format!(
+                        "Could not create file {}/{}.md : {}",
+                        repo_path,
+                        utils::format_idea_filename(&path),
+                        e
+                    ),
+                )),
             }
         } else {
             Ok((path, false))
         }
     }
 
-    fn add_idea_to_readme(&self, readme_path: &String, commit_msg: &String, repo_path: &String) -> io::Result<()> {
+    fn add_idea_to_readme(
+        &self,
+        readme_path: &String,
+        commit_msg: &String,
+        repo_path: &String,
+    ) -> io::Result<()> {
         match fs::OpenOptions::new()
-                              .write(true)
-                              .append(true)
-                              .open(readme_path)
+            .write(true)
+            .append(true)
+            .open(readme_path)
         {
             Ok(mut file) => {
-                let git_url = String::from_utf8(git::get_repo_url(repo_path)
-                                                    .expect("Failed to get remote url"))
-                                     .expect("Failed to convert url string").replace("\n", "");
+                let git_url = String::from_utf8(
+                    git::get_repo_url(repo_path).expect("Failed to get remote url"),
+                )
+                .expect("Failed to convert url string")
+                .replace("\n", "");
 
                 // TODO: Branches?
-                match file.write(format!("## [{}]({}/blob/master/ideas/{}.md)\n",
-                                       commit_msg,
-                                       git_url,
-                                       utils::format_idea_filename(commit_msg))
-                                  .as_bytes()) {
+                match file.write(
+                    format!(
+                        "## [{}]({}/blob/master/ideas/{}.md)\n",
+                        commit_msg,
+                        git_url,
+                        utils::format_idea_filename(commit_msg)
+                    )
+                    .as_bytes(),
+                ) {
                     Ok(_) => Ok(()),
-                    Err(e) => Err(e)
+                    Err(e) => Err(e),
                 }
-            },
+            }
             Err(e) => Err(e),
         }
     }

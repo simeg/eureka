@@ -14,7 +14,10 @@ pub mod git {
             .args(default_args(repo_path).iter())
             .arg("add")
             .arg("./README.md")
-            .arg(format!("./ideas/{}.md", utils::format_idea_filename(commit_msg)))
+            .arg(format!(
+                "./ideas/{}.md",
+                utils::format_idea_filename(commit_msg)
+            ))
             .status()
         {
             Ok(_) => Ok(()),
@@ -66,13 +69,13 @@ pub mod git {
 
     pub fn get_repo_url(repo_path: &String) -> Result<Vec<u8>> {
         Ok(Command::new(git())
-               .args(default_args(repo_path).iter())
-               .arg("config")
-               .arg("--get")
-               .arg("remote.origin.url")
-               .output()
-               .expect("Could not get remote url.")
-               .stdout)
+            .args(default_args(repo_path).iter())
+            .arg("config")
+            .arg("--get")
+            .arg("remote.origin.url")
+            .output()
+            .expect("Could not get remote url.")
+            .stdout)
     }
 
     fn git() -> String {
