@@ -20,6 +20,7 @@ use file_handler::ConfigFile::*;
 use file_handler::ConfigManagement;
 use file_handler::FileHandler;
 use file_handler::FileManagement;
+use file_handler::IdeaManagement;
 use git::git::git_commit_and_push;
 
 mod file_handler;
@@ -132,14 +133,24 @@ fn main() {
     if !first_time {
         let commit_msg: String = get_commit_msg();
         let readme_path: String = format!("{}/README.md", repo_path);
-        let idea_path = fh.get_idea_path(repo_path, commit_msg);
+        let idea_path = fh.get_idea_path(&repo_path, &commit_msg);
+
+        // If getting the idea path failed then panic.
+        let (idea_path, is_new_idea) = match idea_path {
+            Ok((path, is_new_idea)) => (path, is_new_idea),
+            Err(e) => panic!("Could not get idea_path : {}", e)
+        };
 
         match open_editor(&editor_path, &idea_path) {
             Ok(_) => {
-                        // TODO: append to readme
-                        //       add files and commit
+                // If the idea already exists we dont need a new entry in the readme
+                if is_new_idea {
+                    fh.add_idea_to_readme(&readme_path, &commit_msg, &repo_path)
+                      .expect(&format!("Could not write to {}", &readme_path));
+                }
+
                 let _ = git_commit_and_push(&repo_path, commit_msg);
-            }
+            },
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     } else {
@@ -166,7 +177,7 @@ fn get_commit_msg() -> String {
     println!("Idea commit subject: ");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
-    input
+    input.replace("\n","")
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {

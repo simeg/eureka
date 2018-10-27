@@ -4,16 +4,17 @@ pub mod git {
     use utils::utils;
 
     pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<()> {
-        git_add(repo_path)
+        git_add(repo_path, &msg)
             .and(git_commit(repo_path, msg))
             .and(git_push(repo_path))
     }
 
-    fn git_add(repo_path: &String) -> Result<()> {
+    fn git_add(repo_path: &String, commit_msg: &String) -> Result<()> {
         match Command::new(git())
             .args(default_args(repo_path).iter())
             .arg("add")
             .arg("./README.md")
+            .arg(format!("./{}.md", utils::format_idea_filename(commit_msg)))
             .status()
         {
             Ok(_) => Ok(()),
@@ -61,6 +62,17 @@ pub mod git {
                 Err(e)
             }
         }
+    }
+
+    pub fn get_repo_url(repo_path: &String) -> Result<Vec<u8>> {
+        Ok(Command::new(git())
+               .args(default_args(repo_path).iter())
+               .arg("config")
+               .arg("--get")
+               .arg("remote.origin.url")
+               .output()
+               .expect("Could not get remote url.")
+               .stdout)
     }
 
     fn git() -> String {

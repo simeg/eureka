@@ -7,6 +7,8 @@ use std::io;
 use std::io::ErrorKind;
 use std::io::{Read, Write};
 use std::path;
+use utils::utils;
+use git::git;
 
 const CONFIG_REPO: &'static str = "repo_path";
 const CONFIG_EDITOR: &'static str = "editor_path";
@@ -41,17 +43,49 @@ pub trait FileManagement {
 }
 
 pub trait IdeaManagement {
-    fn get_idea_path(&self, path: &String) -> String;
+    fn get_idea_path(&self, repo_path: &String, path: &String) -> io::Result<(String, bool)>;
+    fn add_idea_to_readme(&self, readme_path: &String, commit_msg: &String, repo_path: &String) -> io::Result<()>;
 }
 
 impl IdeaManagement for FileHandler {
-    fn get_idea_path(&self, repo_path: &String, path: &String) -> String {
+    fn get_idea_path(&self, repo_path: &String, path: &String) -> io::Result<(String, bool)> {
         let path: String = format!("{}/{}.md", repo_path, utils::format_idea_filename(path));
         if !self.file_exists(&path.as_str()) {
-            fs::File::create(path).unwrap_or_else( panic!("Could not create file {} : {}", path, e) )
+            match fs::File::create(&path) {
+                Ok(_) => Ok((path, true)),
+                // Re-constructing the error like this allows us to add our own text to the message.
+                Err(e) => Err(io::Error::new(e.kind(), format!("Could not create file {}/{}.md : {}",
+                                                  repo_path,
+                                                  utils::format_idea_filename(&path),
+                                                  e)))
+            }
+        } else {
+            Ok((path, false))
         }
+    }
 
-        path
+    fn add_idea_to_readme(&self, readme_path: &String, commit_msg: &String, repo_path: &String) -> io::Result<()> {
+        match fs::OpenOptions::new()
+                              .write(true)
+                              .append(true)
+                              .open(readme_path)
+        {
+            Ok(mut file) => {
+                let git_url = String::from_utf8(git::get_repo_url(repo_path)
+                                                    .expect("Failed to get remote url"))
+                                     .expect("Failed to convert url string").replace("\n", "");
+
+                match file.write(format!("## [{}]({}/blob/master/{}.md)\n",
+                                       commit_msg,
+                                       git_url,
+                                       utils::format_idea_filename(commit_msg))
+                                  .as_bytes()) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(e)
+                }
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
