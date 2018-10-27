@@ -40,6 +40,21 @@ pub trait FileManagement {
     fn file_rm(&self, file: ConfigFile) -> io::Result<()>;
 }
 
+pub trait IdeaManagement {
+    fn get_idea_path(&self, path: &String) -> String;
+}
+
+impl IdeaManagement for FileHandler {
+    fn get_idea_path(&self, repo_path: &String, path: &String) -> String {
+        let path: String = format!("{}/{}.md", repo_path, utils::format_idea_filename(path));
+        if !self.file_exists(&path.as_str()) {
+            fs::File::create(path).unwrap_or_else( panic!("Could not create file {} : {}", path, e) )
+        }
+
+        path
+    }
+}
+
 impl ConfigManagement for FileHandler {
     fn config_dir_create(&self) -> io::Result<String> {
         fs::create_dir_all(config_dir_path()).expect("Cannot create directory");

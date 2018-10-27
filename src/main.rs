@@ -132,10 +132,12 @@ fn main() {
     if !first_time {
         let commit_msg: String = get_commit_msg();
         let readme_path: String = format!("{}/README.md", repo_path);
-        let idea_path: String = format!("{}/{}.md", repo_path, utils::utils::format_idea_filename(&commit_msg));
+        let idea_path = fh.get_idea_path(repo_path, commit_msg);
 
         match open_editor(&editor_path, &idea_path) {
             Ok(_) => {
+                        // TODO: append to readme
+                        //       add files and commit
                 let _ = git_commit_and_push(&repo_path, commit_msg);
             }
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
