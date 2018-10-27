@@ -14,7 +14,7 @@ pub mod git {
             .args(default_args(repo_path).iter())
             .arg("add")
             .arg("./README.md")
-            .arg(format!("./{}.md", utils::format_idea_filename(commit_msg)))
+            .arg(format!("./ideas/{}.md", utils::format_idea_filename(commit_msg)))
             .status()
         {
             Ok(_) => Ok(()),

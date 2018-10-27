@@ -49,7 +49,19 @@ pub trait IdeaManagement {
 
 impl IdeaManagement for FileHandler {
     fn get_idea_path(&self, repo_path: &String, path: &String) -> io::Result<(String, bool)> {
-        let path: String = format!("{}/{}.md", repo_path, utils::format_idea_filename(path));
+        let folder_path: String = format!("{}/ideas", repo_path);
+        let path: String = format!("{}/{}.md", folder_path, utils::format_idea_filename(path));
+
+        if !self.file_exists(&folder_path.as_str()) {
+            let result = fs::create_dir(&folder_path);
+            if result.is_err() {
+                let error = result.unwrap_err();
+                return Err(io::Error::new(error.kind(), format!("Could not create directory {} : {}",
+                                                  folder_path,
+                                                  error)))
+            }
+        }
+
         if !self.file_exists(&path.as_str()) {
             match fs::File::create(&path) {
                 Ok(_) => Ok((path, true)),
@@ -75,7 +87,8 @@ impl IdeaManagement for FileHandler {
                                                     .expect("Failed to get remote url"))
                                      .expect("Failed to convert url string").replace("\n", "");
 
-                match file.write(format!("## [{}]({}/blob/master/{}.md)\n",
+                // TODO: Branches?
+                match file.write(format!("## [{}]({}/blob/master/ideas/{}.md)\n",
                                        commit_msg,
                                        git_url,
                                        utils::format_idea_filename(commit_msg))
