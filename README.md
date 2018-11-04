@@ -53,5 +53,15 @@ echo 'alias idea="eureka"' >> ~/.zshrc
 echo 'alias idea="eureka"' >> ~/.bashrc
 ```
 
+## Development
+
+This repo uses a Makefile as an interface for common operations.
+
+1) Do code changes
+2) Run `make build link` to build the project and create a symlink from the built binary to the root
+   of the project
+3) Run `./eureka` to execute the binary with your changes
+4) Profit :star:
+
 ## Improvements
 See [github issues](https://github.com/simeg/eureka/issues).
