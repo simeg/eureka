@@ -89,9 +89,9 @@ fn main() {
         Ok(file_path) => file_path,
         Err(_) => {
             let selections = &[
-                "1) vim (/usr/bin/vim)",
-                "2) nano (/usr/bin/nano)",
-                "3) Other (provide path to binary)",
+                "vim (/usr/bin/vim)",
+                "nano (/usr/bin/nano)",
+                "Other (provide path to binary)",
             ];
 
             println!("What editor do you want to use for writing down your ideas?");
