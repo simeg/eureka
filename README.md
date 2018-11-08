@@ -37,6 +37,7 @@ When your idea is committed it's pushed to `origin/master`.
 ```bash
 --clear-editor    Clear the stored path to your idea editor
 --clear-repo      Clear the stored path to your idea repo
+--view            View your ideas using less
 ```
 
 ### Recommended alias
