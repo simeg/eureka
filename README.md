@@ -32,6 +32,12 @@ $ eureka
 
 When your idea is committed it's pushed to `origin/master`.
 
+To view your stored ideas use the `--view` flag.
+
+```bash
+$ eureka --view
+```
+
 ### Flags
 
 ```bash
