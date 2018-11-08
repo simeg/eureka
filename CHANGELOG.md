@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 1.4.0
+* Add flag `--view` for viewing stored ideas.
+
 ## Version 1.3.0
 * Remove usage of numbers in selecting your editor which caused confusion.
 * After first time setup - do not prompt user for idea.
