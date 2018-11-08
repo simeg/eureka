@@ -52,12 +52,24 @@ impl ConfigManagement for FileHandler {
 
     fn config_read(&self, file: ConfigFile) -> io::Result<String> {
         let config_file_path = config_path(file);
+        if !self.file_exists(&config_file_path) {
+            return Err(io::Error::new(
+                ErrorKind::NotFound,
+                format!("Path does not exist: {}", &config_file_path),
+            ));
+        }
         let mut file = fs::File::open(&config_file_path)?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
             .expect(&format!("Unable to read file at: {}", config_file_path));
-        if contents.ends_with("\n") {
+
+        if contents.is_empty() {
+            return Err(io::Error::new(
+                ErrorKind::NotFound,
+                format!("File is empty: {}", &config_file_path),
+            ));
+        } else if contents.ends_with("\n") {
             contents.pop().expect("File is empty");
         }
 
