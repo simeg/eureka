@@ -1,17 +1,11 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
-use std::io;
-use std::io::{Error, Write};
-use std::process::Command;
-
-#[macro_use]
-extern crate text_io;
-
 #[macro_use]
 extern crate clap;
-
 extern crate dialoguer;
+#[macro_use]
+extern crate text_io;
 
 use clap::ArgMatches;
 use clap::{App, Arg};
@@ -21,6 +15,9 @@ use file_handler::ConfigManagement;
 use file_handler::FileHandler;
 use file_handler::FileManagement;
 use git::git::git_commit_and_push;
+use std::io;
+use std::io::{Error, Write};
+use std::process::Command;
 
 mod file_handler;
 mod git;
@@ -31,6 +28,7 @@ fn main() {
         .author(crate_authors!())
         .version(crate_version!())
         .about("Input and store your ideas without leaving the terminal")
+        // TODO(simeg): Keep argument strings DRY
         .arg(
             Arg::with_name("clear-repo")
                 .long("clear-repo")
@@ -40,6 +38,11 @@ fn main() {
             Arg::with_name("clear-editor")
                 .long("clear-editor")
                 .help("Clear the stored path to your idea editor"),
+        )
+        .arg(
+            Arg::with_name("view")
+                .long("view")
+                .help("View your ideas using less"),
         )
         .get_matches();
 
@@ -56,6 +59,24 @@ fn main() {
         match fh.file_rm(Editor) {
             Ok(_) => {}
             Err(e) => panic!(e),
+        }
+    }
+
+    if cli_flags.is_present("view") {
+        match fh.config_read(Repo) {
+            Ok(repo_path) => {
+                if repo_path.is_empty() {
+                    panic!("No path to repository found");
+                } else {
+                    match open_pager_less(repo_path) {
+                        Ok(_) => {
+                            ::std::process::exit(0);
+                        }
+                        Err(e) => panic!(e),
+                    }
+                }
+            }
+            Err(_) => panic!("No path to repository found"),
         }
     }
 
@@ -176,6 +197,28 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
             );
             Err(e)
         }
+    }
+}
+
+fn open_pager_less(repo_config_file: String) -> Result<(), Error> {
+    let readme_path = &(repo_config_file + "/README.md");
+    match Command::new(less()).arg(readme_path).status() {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            eprintln!(
+                "Could not open idea file with less at [{}]: {}",
+                readme_path, e
+            );
+            Err(e)
+        }
+    }
+}
+
+fn less() -> String {
+    if utils::utils::is_program_in_path("less") {
+        String::from("less")
+    } else {
+        panic!("Cannot locate executable - less - on your system")
     }
 }
 
