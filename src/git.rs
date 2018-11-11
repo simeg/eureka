@@ -64,7 +64,7 @@ pub mod git {
     }
 
     fn git() -> String {
-        if utils::is_program_in_path("git") {
+        if utils::is_available("git") {
             String::from("git")
         } else {
             panic!("Cannot locate executable - git - on your system")

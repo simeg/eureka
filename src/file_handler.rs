@@ -100,7 +100,8 @@ impl ConfigManagement for FileHandler {
     }
 
     fn config_write(&self, config: Config, value: String) -> io::Result<()> {
-        let path = path::Path::new(&config_path_for(config));
+        let config_path = &config_path_for(config);
+        let path = path::Path::new(config_path);
 
         let mut file = match fs::File::create(&path) {
             Err(e) => panic!("Couldn't create {}: {}", path.display(), e.description()),
@@ -181,7 +182,7 @@ mod tests {
     }
 
     #[test]
-    fn file_system_create_dir_is_ok() {
+    fn tests_work() {
         assert!(true, true);
     }
 }
