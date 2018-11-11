@@ -215,7 +215,7 @@ fn open_pager_less(repo_config_file: String) -> Result<(), Error> {
 }
 
 fn less() -> String {
-    if utils::utils::is_program_in_path("less") {
+    if utils::utils::is_available("less") {
         String::from("less")
     } else {
         panic!("Cannot locate executable - less - on your system")
