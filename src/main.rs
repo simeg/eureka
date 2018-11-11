@@ -10,7 +10,7 @@ extern crate text_io;
 use clap::ArgMatches;
 use clap::{App, Arg};
 use dialoguer::Select;
-use file_handler::ConfigFile::*;
+use file_handler::Config::*;
 use file_handler::ConfigManagement;
 use file_handler::FileHandler;
 use file_handler::FileManagement;
