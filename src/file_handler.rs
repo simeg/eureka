@@ -24,13 +24,33 @@ impl Config {
 
 pub struct FileHandler;
 
-pub trait FileSystem {
+pub trait FileManagement {
     fn create_dir(&self, path: &str) -> io::Result<()>;
+    fn file_exists(&self, path: &str) -> bool;
+    fn file_rm(&self, file: Config) -> io::Result<()>;
 }
 
-impl FileSystem for FileHandler {
+impl FileManagement for FileHandler {
     fn create_dir(&self, path: &str) -> io::Result<()> {
         fs::create_dir_all(&path)
+    }
+
+    fn file_exists(&self, path: &str) -> bool {
+        fs::metadata(path).is_ok()
+    }
+
+    fn file_rm(&self, config: Config) -> io::Result<()> {
+        let config_path = config_path_for(config);
+
+        if !self.file_exists(&config_path) {
+            return Err(io::Error::new(
+                ErrorKind::NotFound,
+                format!("Path does not exist: {}", config_path),
+            ));
+        }
+
+        fs::remove_file(&config_path)?;
+        Ok(())
     }
 }
 
@@ -39,11 +59,6 @@ pub trait ConfigManagement {
     fn config_dir_exists(&self) -> bool;
     fn config_read(&self, file: Config) -> io::Result<String>;
     fn config_write(&self, file: Config, value: String) -> io::Result<()>;
-}
-
-pub trait FileManagement {
-    fn file_exists(&self, path: &str) -> bool;
-    fn file_rm(&self, file: Config) -> io::Result<()>;
 }
 
 impl ConfigManagement for FileHandler {
@@ -56,35 +71,36 @@ impl ConfigManagement for FileHandler {
         self.file_exists(&config_dir_path())
     }
 
-    fn config_read(&self, file: Config) -> io::Result<String> {
-        let config_file_path = config_path_for(file);
-        if !self.file_exists(&config_file_path) {
+    fn config_read(&self, config: Config) -> io::Result<String> {
+        let config_path = config_path_for(config);
+        if !self.file_exists(&config_path) {
             return Err(io::Error::new(
                 ErrorKind::NotFound,
-                format!("Path does not exist: {}", &config_file_path),
+                format!("File does not exist: {}", &config_path),
             ));
         }
-        let mut file = fs::File::open(&config_file_path)?;
+        let mut file = fs::File::open(&config_path)?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .expect(&format!("Unable to read file at: {}", config_file_path));
+            .expect(&format!("Unable to read config at: {}", config_path));
 
         if contents.is_empty() {
             return Err(io::Error::new(
                 ErrorKind::NotFound,
-                format!("File is empty: {}", &config_file_path),
+                format!("File is empty: {}", &config_path),
             ));
         } else if contents.ends_with("\n") {
-            contents.pop().expect("File is empty");
+            contents
+                .pop()
+                .expect(&format!("File is empty: {}", &config_path));
         }
 
         Ok(contents)
     }
 
-    fn config_write(&self, file: Config, value: String) -> io::Result<()> {
-        let config_file_path = config_path_for(file);
-        let path = path::Path::new(&config_file_path);
+    fn config_write(&self, config: Config, value: String) -> io::Result<()> {
+        let path = path::Path::new(&config_path_for(config));
 
         let mut file = match fs::File::create(&path) {
             Err(e) => panic!("Couldn't create {}: {}", path.display(), e.description()),
@@ -95,26 +111,6 @@ impl ConfigManagement for FileHandler {
             Err(e) => panic!("Couldn't write to {}: {}", path.display(), e.description()),
             Ok(_) => Ok(()),
         }
-    }
-}
-
-impl FileManagement for FileHandler {
-    fn file_exists(&self, path: &str) -> bool {
-        fs::metadata(path).is_ok()
-    }
-
-    fn file_rm(&self, file: Config) -> io::Result<()> {
-        let config_file_path = config_path_for(file);
-
-        if !self.file_exists(&config_file_path) {
-            return Err(io::Error::new(
-                ErrorKind::NotFound,
-                format!("Path does not exist: {}", config_file_path),
-            ));
-        }
-
-        fs::remove_file(&config_file_path)?;
-        Ok(())
     }
 }
 
@@ -147,17 +143,10 @@ mod tests {
     use super::*;
     use file_handler::ConfigManagement;
     use file_handler::FileManagement;
-    use file_handler::FileSystem;
     use std::io;
 
     struct MockFileSystem;
     struct MockFileHandler;
-
-    impl FileSystem for MockFileSystem {
-        fn create_dir(&self, _path: &str) -> io::Result<()> {
-            Ok(())
-        }
-    }
 
     impl ConfigManagement for MockFileHandler {
         fn config_dir_create(&self) -> io::Result<String> {
@@ -178,6 +167,10 @@ mod tests {
     }
 
     impl FileManagement for MockFileHandler {
+        fn create_dir(&self, _path: &str) -> io::Result<()> {
+            Ok(())
+        }
+
         fn file_exists(&self, _path: &str) -> bool {
             true
         }
@@ -189,36 +182,6 @@ mod tests {
 
     #[test]
     fn file_system_create_dir_is_ok() {
-        let fs = MockFileSystem {};
-        let result = fs.create_dir("irrelevant");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn file_handler_create_config_dir_is_ok() {
-        let fh = MockFileHandler {};
-        let result = fh.config_dir_create();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn file_handler_write_config_file_is_ok() {
-        let fh = MockFileHandler {};
-        let result = fh.config_write(Config::Repo, String::from("irrelevant"));
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn file_handler_read_config_file_is_ok() {
-        let fh = MockFileHandler {};
-        let result = fh.config_read(Config::Repo);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn file_handler_delete_config_file_is_ok() {
-        let fh = MockFileHandler {};
-        let result = fh.file_rm(Config::Repo);
-        assert!(result.is_ok());
+        assert!(true, true);
     }
 }
