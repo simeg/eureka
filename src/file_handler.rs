@@ -2,11 +2,8 @@ extern crate dirs;
 
 use self::dirs::home_dir;
 use std::error::Error;
-use std::fs;
-use std::io;
-use std::io::ErrorKind;
-use std::io::{Read, Write};
-use std::path;
+use std::io::{ErrorKind, Read, Write};
+use std::{fs, io, path};
 
 pub enum Config {
     Repo,
