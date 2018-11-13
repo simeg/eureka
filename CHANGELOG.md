@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 1.5.0
+* Add colors to output
+
 ## Version 1.4.0
 * Add flag `--view` for viewing stored ideas.
 
