@@ -6,21 +6,21 @@ extern crate clap;
 extern crate dialoguer;
 #[macro_use]
 extern crate text_io;
+extern crate termcolor;
 
-use clap::ArgMatches;
-use clap::{App, Arg};
+use clap::{App, Arg, ArgMatches};
 use dialoguer::Select;
 use file_handler::Config::*;
-use file_handler::ConfigManagement;
-use file_handler::FileHandler;
-use file_handler::FileManagement;
+use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
+use printer::{Print, Printer};
 use std::io;
 use std::io::{Error, Write};
 use std::process::Command;
 
 mod file_handler;
 mod git;
+mod printer;
 mod utils;
 
 fn main() {
@@ -47,19 +47,15 @@ fn main() {
         .get_matches();
 
     let fh = FileHandler {};
+    let p = Printer {};
 
     if cli_flags.is_present("clear-repo") {
-        match fh.file_rm(Repo) {
-            Ok(_) => {}
-            Err(e) => panic!(e),
-        }
+        fh.file_rm(Repo).expect("Could not remove repo config file");
     }
 
     if cli_flags.is_present("clear-editor") {
-        match fh.file_rm(Editor) {
-            Ok(_) => {}
-            Err(e) => panic!(e),
-        }
+        fh.file_rm(Editor)
+            .expect("Could not remove editor config file");
     }
 
     if cli_flags.is_present("view") {
@@ -88,13 +84,13 @@ fn main() {
         Ok(file_path) => file_path,
         Err(_) => {
             first_time = true;
-            display_first_time_setup_banner();
+            p.print_fts_banner();
             if !fh.config_dir_exists() {
                 fh.config_dir_create()
                     .expect("Unable to create dir to store config");
             }
 
-            print!("Absolute path to your idea repo: ");
+            p.print_input_header("Absolute path to your idea repo");
             io::stdout().flush().unwrap();
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
@@ -115,7 +111,7 @@ fn main() {
                 "Other (provide path to binary)",
             ];
 
-            println!("What editor do you want to use for writing down your ideas?");
+            p.print_editor_selection_header();
             let index = Select::new()
                 .default(0)
                 .items(selections)
@@ -126,14 +122,15 @@ fn main() {
                 0 => s("/usr/bin/vim"),
                 1 => s("/usr/bin/nano"),
                 2 => {
-                    print!("Path to editor binary: ");
+                    p.print_input_header("Path to editor binary");
                     io::stdout().flush().unwrap();
                     let editor_bin_path: String = read!();
                     editor_bin_path
                 }
                 _ => {
-                    // TODO: Do not fall back, ask user again for options
-                    println!("Invalid option, falling back to vim");
+                    // TODO(simeg): Do not fall back, ask user again for options
+                    // TODO(simeg): How can the user even end up here?
+                    p.println("Invalid option, falling back to vim");
                     s("/usr/bin/vim")
                 }
             };
@@ -151,6 +148,7 @@ fn main() {
     };
 
     if !first_time {
+        p.print_input_header(">> Idea summary");
         let commit_msg: String = get_commit_msg();
         let readme_path: String = format!("{}/README.md", repo_path);
 
@@ -161,27 +159,11 @@ fn main() {
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     } else {
-        println!("First time setup complete. Happy ideation!")
+        p.println("First time setup complete. Happy ideation!");
     }
 }
 
-fn display_first_time_setup_banner() {
-    println!();
-    println!("##########################################################");
-    println!("####                 First Time Setup                 ####");
-    println!("##########################################################");
-    println!();
-    println!("This tool requires you to have a repository with a README.md");
-    println!("in the root folder. The markdown file is where your ideas will");
-    println!("be stored. ");
-    println!();
-    println!("Once first time setup has completed, simply run Eureka again");
-    println!("to begin writing down ideas.");
-    println!();
-}
-
 fn get_commit_msg() -> String {
-    println!("Idea commit subject: ");
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     input
@@ -192,7 +174,7 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
         Ok(_) => Ok(()),
         Err(e) => {
             eprintln!(
-                "Unable to open file [{}] with editor binary at [{}]: {}",
+                "Error: Unable to open file [{}] with editor binary at [{}]: {}",
                 file_path, bin_path, e
             );
             Err(e)
@@ -206,7 +188,7 @@ fn open_pager_less(repo_config_file: String) -> Result<(), Error> {
         Ok(_) => Ok(()),
         Err(e) => {
             eprintln!(
-                "Could not open idea file with less at [{}]: {}",
+                "Error: Could not open idea file with less at [{}]: {}",
                 readme_path, e
             );
             Err(e)
