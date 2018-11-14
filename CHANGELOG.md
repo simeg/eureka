@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 1.5.1
+* Abort early if any clear flag is present
+
 ## Version 1.5.0
 * Add colors to output
 
