@@ -6,7 +6,7 @@ Imagine working on something important and then having an idea. Instead of letti
 slip by you can just type `eureka` and you're able to quickly store your idea and then
 continue working.
 
-**It's developed _by_ and _for_ people who likes living in the terminal.**
+**It's developed _by_ and _for_ people who enjoy using the terminal.**
 
 ![demo](assets/demo.gif)
 
@@ -19,6 +19,8 @@ it. And since it's your own repository you can make it private to keep your idea
 ```bash
 $ cargo install eureka
 ```
+
+Use the same command to update `eureka` to the latest version.
 
 ## Usage
 The first time you run `eureka` it will ask a few questions regarding your setup. This configuration
