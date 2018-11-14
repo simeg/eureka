@@ -64,30 +64,24 @@ fn main() {
 
     if cli_flags.is_present("view") {
         match fh.config_read(Repo) {
-            Ok(repo_path) => {
-                if repo_path.is_empty() {
-                    panic!("No path to repository found");
-                } else {
-                    match open_pager_less(repo_path) {
-                        Ok(_) => {
-                            ::std::process::exit(0);
-                        }
-                        Err(e) => panic!(e),
-                    }
+            Ok(repo_path) => match open_pager_less(repo_path) {
+                Ok(_) => {
+                    ::std::process::exit(0);
                 }
-            }
+                Err(e) => panic!(e),
+            },
             Err(_) => panic!("No path to repository found"),
         }
     }
 
     // If first time setup is carried out do not
     // require an idea to be written down.
-    let mut first_time: bool = false;
+    let mut is_first_time: bool = false;
 
     let repo_path: String = match fh.config_read(Repo) {
         Ok(file_path) => file_path,
         Err(_) => {
-            first_time = true;
+            is_first_time = true;
             p.print_fts_banner();
             if !fh.config_dir_exists() {
                 fh.config_dir_create()
@@ -151,7 +145,7 @@ fn main() {
         }
     };
 
-    if !first_time {
+    if !is_first_time {
         p.print_input_header(">> Idea summary");
         let commit_msg: String = get_commit_msg();
         let readme_path: String = format!("{}/README.md", repo_path);
