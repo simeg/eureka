@@ -4,9 +4,9 @@
 #[macro_use]
 extern crate clap;
 extern crate dialoguer;
+extern crate termcolor;
 #[macro_use]
 extern crate text_io;
-extern crate termcolor;
 
 use clap::{App, Arg, ArgMatches};
 use dialoguer::Select;
@@ -56,6 +56,10 @@ fn main() {
     if cli_flags.is_present("clear-editor") {
         fh.file_rm(Editor)
             .expect("Could not remove editor config file");
+    }
+
+    if cli_flags.is_present("clear-repo") || cli_flags.is_present("clear-editor") {
+        ::std::process::exit(0);
     }
 
     if cli_flags.is_present("view") {
