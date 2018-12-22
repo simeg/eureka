@@ -49,5 +49,4 @@ run:
 	@RUST_BACKTRACE=1 $(CARGO) run
 
 test:
-	@$(CARGO) test -- --nocapture
-	@echo "Tests OK 👌"
+	@$(CARGO) test -- --nocapture && echo "Tests OK 👌"

@@ -13,6 +13,7 @@ pub trait Print {
     fn print_input_header(&mut self, value: &str);
     fn print_editor_selection_header(&mut self);
     fn print_fts_banner(&mut self);
+    fn flush(&mut self) -> io::Result<()>;
 }
 
 impl<W: termcolor::WriteColor> Print for Printer<W> {
@@ -65,6 +66,10 @@ impl<W: termcolor::WriteColor> Print for Printer<W> {
         for row in &rows {
             println_w_opts(&mut self.writer, row, color, false);
         }
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.writer.flush()
     }
 }
 

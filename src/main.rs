@@ -93,7 +93,7 @@ fn main() {
             }
 
             p.print_input_header("Absolute path to your idea repo");
-            io::stdout().flush().unwrap();
+            p.flush().unwrap();
             let input_path: String = read!();
             let copy_input_path: String = input_path.clone();
 
@@ -125,7 +125,7 @@ fn main() {
                 1 => s("/usr/bin/nano"),
                 2 => {
                     p.print_input_header("Path to editor binary");
-                    io::stdout().flush().unwrap();
+                    p.flush().unwrap();
                     let editor_bin_path: String = read!();
                     editor_bin_path
                 }
