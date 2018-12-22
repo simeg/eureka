@@ -1,36 +1,36 @@
 extern crate termcolor;
 
-use self::termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
-use std::io::Write;
+use self::termcolor::{Color, ColorSpec};
+use std::io;
 
-// TODO(simeg): Pass in stream to make it testable
-pub struct Printer;
-
-pub trait Print {
-    fn println(&self, value: &str);
-    fn print_input_header(&self, value: &str);
-    fn print_editor_selection_header(&self);
-    fn print_fts_banner(&self);
+pub struct Printer<W> {
+    pub writer: W,
 }
 
-impl Print for Printer {
-    fn println(&self, value: &str) {
-        let mut stdout = StandardStream::stdout(ColorChoice::Never);
-        writeln!(&mut stdout, "{}", value).expect("Could not write to stdout");
+pub trait Print {
+    fn println(&mut self, value: &str);
+    fn print_input_header(&mut self, value: &str);
+    fn print_editor_selection_header(&mut self);
+    fn print_fts_banner(&mut self);
+}
+
+impl<W: termcolor::WriteColor> Print for Printer<W> {
+    fn println(&mut self, value: &str) {
+        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
     }
 
-    fn print_input_header(&self, value: &str) {
-        println_w_opts(value, Color::Green, true);
-        print("> ");
+    fn print_input_header(&mut self, value: &str) {
+        println_w_opts(&mut self.writer, value, Color::Green, true);
+        print(&mut self.writer, "> ");
     }
 
-    fn print_editor_selection_header(&self) {
+    fn print_editor_selection_header(&mut self) {
         let text = "What editor do you want to use for writing down your ideas?";
-        println_w_opts(text, Color::Green, true);
-        print(""); // Don't make options for selecting editor also be colored
+        println_w_opts(&mut self.writer, text, Color::Green, true);
+        print(&mut self.writer, ""); // Don't make options for selecting editor also be colored
     }
 
-    fn print_fts_banner(&self) {
+    fn print_fts_banner(&mut self) {
         let color = Color::Yellow;
         let banner = format!(
             "{}\n{}{}{}{}{}\n{}",
@@ -62,24 +62,28 @@ impl Print for Printer {
             row7,
         ];
         for row in &rows {
-            println_w_opts(row, color, false);
+            println_w_opts(&mut self.writer, row, color, false);
         }
     }
 }
 
-fn print(value: &str) {
-    let mut stdout = StandardStream::stdout(ColorChoice::Never);
-    write!(&mut stdout, "{}", value).expect("Could not write to stdout");
-    std::io::stdout().flush().expect("Could not flush stdout");
+fn print<W>(stdout: &mut W, value: &str)
+where
+    W: io::Write,
+{
+    write!(stdout, "{}", value).expect("Could not write to stdout");
+    stdout.flush().expect("Could not flush stdout");
 }
 
-fn println_w_opts(value: &str, color: Color, is_bold: bool) {
-    let mut stdout = StandardStream::stdout(ColorChoice::AlwaysAnsi);
+fn println_w_opts<W>(stdout: &mut W, value: &str, color: Color, is_bold: bool)
+where
+    W: termcolor::WriteColor,
+{
     let mut opts = ColorSpec::new();
     opts.set_fg(Some(color)).set_bold(is_bold);
     stdout
         .set_color(&opts)
         .expect("Could not set color for stdout");
-    writeln!(&mut stdout, "{}", value).expect("Could not write to stdout");
+    writeln!(stdout, "{}", value).expect("Could not write to stdout");
     stdout.reset().expect("Could not reset stdout");
 }

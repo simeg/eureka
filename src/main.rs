@@ -17,6 +17,8 @@ use printer::{Print, Printer};
 use std::io;
 use std::io::{Error, Write};
 use std::process::Command;
+use termcolor::ColorChoice;
+use termcolor::StandardStream;
 
 mod file_handler;
 mod git;
@@ -47,7 +49,9 @@ fn main() {
         .get_matches();
 
     let fh = FileHandler {};
-    let p = Printer {};
+    let mut p = Printer {
+        writer: &mut StandardStream::stdout(ColorChoice::AlwaysAnsi),
+    };
 
     if cli_flags.is_present("clear-repo") {
         fh.file_rm(Repo).expect("Could not remove repo config file");
