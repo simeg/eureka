@@ -4,27 +4,14 @@ use self::dirs::home_dir;
 use std::error::Error;
 use std::io::{ErrorKind, Read, Write};
 use std::{fs, io, path};
-
-pub enum Config {
-    Repo,
-    Editor,
-}
-
-impl Config {
-    fn value(&self) -> &str {
-        match *self {
-            Config::Repo => "repo_path",
-            Config::Editor => "editor_path",
-        }
-    }
-}
+use types::ConfigType;
 
 pub struct FileHandler;
 
 pub trait FileManagement {
     fn create_dir(&self, path: &str) -> io::Result<()>;
     fn file_exists(&self, path: &str) -> bool;
-    fn file_rm(&self, file: Config) -> io::Result<()>;
+    fn file_rm(&self, file: ConfigType) -> io::Result<()>;
 }
 
 impl FileManagement for FileHandler {
@@ -36,7 +23,7 @@ impl FileManagement for FileHandler {
         fs::metadata(path).is_ok()
     }
 
-    fn file_rm(&self, config: Config) -> io::Result<()> {
+    fn file_rm(&self, config: ConfigType) -> io::Result<()> {
         let config_path = config_path_for(config);
 
         if !self.file_exists(&config_path) {
@@ -54,8 +41,8 @@ impl FileManagement for FileHandler {
 pub trait ConfigManagement {
     fn config_dir_create(&self) -> io::Result<String>;
     fn config_dir_exists(&self) -> bool;
-    fn config_read(&self, file: Config) -> io::Result<String>;
-    fn config_write(&self, file: Config, value: String) -> io::Result<()>;
+    fn config_read(&self, file: ConfigType) -> io::Result<String>;
+    fn config_write(&self, file: ConfigType, value: String) -> io::Result<()>;
 }
 
 impl ConfigManagement for FileHandler {
@@ -68,7 +55,7 @@ impl ConfigManagement for FileHandler {
         self.file_exists(&config_dir_path())
     }
 
-    fn config_read(&self, config: Config) -> io::Result<String> {
+    fn config_read(&self, config: ConfigType) -> io::Result<String> {
         let config_path = config_path_for(config);
         if !self.file_exists(&config_path) {
             return Err(io::Error::new(
@@ -96,7 +83,7 @@ impl ConfigManagement for FileHandler {
         Ok(contents)
     }
 
-    fn config_write(&self, config: Config, value: String) -> io::Result<()> {
+    fn config_write(&self, config: ConfigType, value: String) -> io::Result<()> {
         let config_path = &config_path_for(config);
         let path = path::Path::new(config_path);
 
@@ -112,10 +99,10 @@ impl ConfigManagement for FileHandler {
     }
 }
 
-fn config_path_for(file: Config) -> String {
-    let file_name = match file {
-        Config::Repo => Config::Repo.value(),
-        Config::Editor => Config::Editor.value(),
+fn config_path_for(config_type: ConfigType) -> String {
+    let file_name = match config_type {
+        ConfigType::Repo => ConfigType::Repo.value(),
+        ConfigType::Editor => ConfigType::Editor.value(),
     };
 
     match home_dir() {
@@ -155,11 +142,11 @@ mod tests {
             self.file_exists(&String::from("irrelevant"))
         }
 
-        fn config_read(&self, _file: Config) -> io::Result<String> {
+        fn config_read(&self, _file: ConfigType) -> io::Result<String> {
             Ok(String::from("irrelevant"))
         }
 
-        fn config_write(&self, _file: Config, _value: String) -> io::Result<()> {
+        fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
             Ok(())
         }
     }
@@ -173,7 +160,7 @@ mod tests {
             true
         }
 
-        fn file_rm(&self, _file: Config) -> io::Result<()> {
+        fn file_rm(&self, _file: ConfigType) -> io::Result<()> {
             Ok(())
         }
     }

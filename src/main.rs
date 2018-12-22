@@ -17,16 +17,18 @@ use dialoguer::Select;
 use termcolor::ColorChoice;
 use termcolor::StandardStream;
 
-use file_handler::Config::*;
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
+use types::CliFlag::{ClearEditor, ClearRepo, View};
+use types::ConfigType::{Editor, Repo};
 
 mod file_handler;
 mod git;
 mod printer;
 mod reader;
+mod types;
 mod utils;
 
 fn main() {
@@ -34,20 +36,19 @@ fn main() {
         .author(crate_authors!())
         .version(crate_version!())
         .about("Input and store your ideas without leaving the terminal")
-        // TODO(simeg): Keep argument strings DRY
         .arg(
-            Arg::with_name("clear-repo")
-                .long("clear-repo")
+            Arg::with_name(ClearRepo.value())
+                .long(ClearRepo.value())
                 .help("Clear the stored path to your idea repo"),
         )
         .arg(
-            Arg::with_name("clear-editor")
-                .long("clear-editor")
+            Arg::with_name(ClearEditor.value())
+                .long(ClearEditor.value())
                 .help("Clear the stored path to your idea editor"),
         )
         .arg(
-            Arg::with_name("view")
-                .long("view")
+            Arg::with_name(View.value())
+                .long(View.value())
                 .help("View your ideas using less"),
         )
         .get_matches();
@@ -60,16 +61,16 @@ fn main() {
     let mut r = Reader { reader: input };
     let fh = FileHandler {};
 
-    if cli_flags.is_present("clear-repo") {
+    if cli_flags.is_present(ClearRepo.value()) {
         fh.file_rm(Repo).expect("Could not remove repo config file");
     }
 
-    if cli_flags.is_present("clear-editor") {
+    if cli_flags.is_present(ClearEditor.value()) {
         fh.file_rm(Editor)
             .expect("Could not remove editor config file");
     }
 
-    if cli_flags.is_present("clear-repo") || cli_flags.is_present("clear-editor") {
+    if cli_flags.is_present(ClearRepo.value()) || cli_flags.is_present(ClearEditor.value()) {
         ::std::process::exit(0);
     }
 
