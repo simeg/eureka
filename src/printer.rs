@@ -1,7 +1,8 @@
 extern crate termcolor;
 
-use self::termcolor::{Color, ColorSpec};
 use std::io;
+
+use self::termcolor::{Color, ColorSpec};
 
 pub struct Printer<W> {
     pub writer: W,
@@ -86,4 +87,40 @@ where
         .expect("Could not set color for stdout");
     writeln!(stdout, "{}", value).expect("Could not write to stdout");
     stdout.reset().expect("Could not reset stdout");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct MockPrinter<W> {
+        pub writer: W,
+    }
+
+    impl<W: std::io::Write> Print for MockPrinter<W> {
+        fn println(&mut self, _value: &str) {
+            unimplemented!()
+        }
+
+        fn print_input_header(&mut self, _value: &str) {
+            unimplemented!()
+        }
+
+        fn print_editor_selection_header(&mut self) {
+            unimplemented!()
+        }
+
+        fn print_fts_banner(&mut self) {
+            unimplemented!()
+        }
+    }
+
+    #[test]
+    fn tests_work() {
+        let mut _p = MockPrinter {
+            writer: &mut io::stdout(),
+        };
+
+        assert_eq!(true, true);
+    }
 }
