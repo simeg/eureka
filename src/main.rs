@@ -8,21 +8,25 @@ extern crate termcolor;
 #[macro_use]
 extern crate text_io;
 
+use std::io;
+use std::io::Error;
+use std::process::Command;
+
 use clap::{App, Arg, ArgMatches};
 use dialoguer::Select;
+use termcolor::ColorChoice;
+use termcolor::StandardStream;
+
 use file_handler::Config::*;
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
 use printer::{Print, Printer};
-use std::io;
-use std::io::{Error, Write};
-use std::process::Command;
-use termcolor::ColorChoice;
-use termcolor::StandardStream;
+use reader::{Read, Reader};
 
 mod file_handler;
 mod git;
 mod printer;
+mod reader;
 mod utils;
 
 fn main() {
@@ -48,10 +52,13 @@ fn main() {
         )
         .get_matches();
 
+    let stdio = io::stdin();
+    let input = stdio.lock();
+    let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
+
+    let mut p = Printer { writer: output };
+    let mut r = Reader { reader: input };
     let fh = FileHandler {};
-    let mut p = Printer {
-        writer: &mut StandardStream::stdout(ColorChoice::AlwaysAnsi),
-    };
 
     if cli_flags.is_present("clear-repo") {
         fh.file_rm(Repo).expect("Could not remove repo config file");
@@ -151,7 +158,7 @@ fn main() {
 
     if !is_first_time {
         p.print_input_header(">> Idea summary");
-        let commit_msg: String = get_commit_msg();
+        let commit_msg: String = r.read();
         let readme_path: String = format!("{}/README.md", repo_path);
 
         match open_editor(&editor_path, &readme_path) {
@@ -163,12 +170,6 @@ fn main() {
     } else {
         p.println("First time setup complete. Happy ideation!");
     }
-}
-
-fn get_commit_msg() -> String {
-    let mut input = String::new();
-    io::stdin().read_line(&mut input).unwrap();
-    input
 }
 
 fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {

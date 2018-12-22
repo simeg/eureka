@@ -118,12 +118,16 @@ mod tests {
         fn print_fts_banner(&mut self) {
             unimplemented!()
         }
+
+        fn flush(&mut self) -> io::Result<()> {
+            unimplemented!()
+        }
     }
 
     #[test]
     fn tests_work() {
         let mut _p = MockPrinter {
-            writer: &mut io::stdout(),
+            writer: io::stdout(),
         };
 
         assert_eq!(true, true);
