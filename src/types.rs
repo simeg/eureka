@@ -12,8 +12,8 @@ pub enum ConfigType {
 impl CliFlag {
     pub fn value(&self) -> &str {
         match *self {
-            CliFlag::ClearRepo => "clear_repo",
-            CliFlag::ClearEditor => "clear_editor",
+            CliFlag::ClearRepo => "clear-repo",
+            CliFlag::ClearEditor => "clear-editor",
             CliFlag::View => "view",
         }
     }
