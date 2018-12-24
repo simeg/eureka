@@ -2,6 +2,7 @@ pub enum CliFlag {
     ClearRepo,
     ClearEditor,
     View,
+    ShortView,
 }
 
 pub enum ConfigType {
@@ -15,6 +16,7 @@ impl CliFlag {
             CliFlag::ClearRepo => "clear-repo",
             CliFlag::ClearEditor => "clear-editor",
             CliFlag::View => "view",
+            CliFlag::ShortView => "v",
         }
     }
 }

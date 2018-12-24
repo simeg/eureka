@@ -21,7 +21,7 @@ use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
-use types::CliFlag::{ClearEditor, ClearRepo, View};
+use types::CliFlag::{ClearEditor, ClearRepo, ShortView, View};
 use types::ConfigType::{Editor, Repo};
 
 mod file_handler;
@@ -49,6 +49,7 @@ fn main() {
         .arg(
             Arg::with_name(View.value())
                 .long(View.value())
+                .short(ShortView.value())
                 .help("View your ideas using less"),
         )
         .get_matches();
