@@ -1,6 +1,7 @@
 pub mod utils {
     use std::env;
     use std::fs;
+    use std::process;
 
     pub fn is_available(program: &str) -> bool {
         if let Ok(path) = env::var("PATH") {
@@ -12,5 +13,9 @@ pub mod utils {
             }
         }
         false
+    }
+
+    pub fn exit_w_code(code: i32) {
+        process::exit(code);
     }
 }

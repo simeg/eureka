@@ -5,11 +5,8 @@
 extern crate clap;
 extern crate dialoguer;
 extern crate termcolor;
-#[macro_use]
-extern crate text_io;
 
 use std::io;
-use std::io::Error;
 use std::process::Command;
 
 use clap::{App, Arg, ArgMatches};
@@ -21,8 +18,10 @@ use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
+use std::io::StdinLock;
 use types::CliFlag::{ClearEditor, ClearRepo, ShortView, View};
 use types::ConfigType::{Editor, Repo};
+use utils::utils::exit_w_code;
 
 mod file_handler;
 mod git;
@@ -62,52 +61,62 @@ fn main() {
     let mut r = Reader { reader: input };
     let fh = FileHandler {};
 
-    if cli_flags.is_present(ClearRepo.value()) {
+    if handle_flags(cli_flags, &fh).is_none() {
+        exit_w_code(0);
+    }
+
+    run(&fh, &mut p, &mut r);
+}
+
+fn handle_flags(args: ArgMatches, fh: &FileHandler) -> Option<()> {
+    if args.is_present(ClearRepo.value()) {
         fh.file_rm(Repo).expect("Could not remove repo config file");
     }
 
-    if cli_flags.is_present(ClearEditor.value()) {
+    if args.is_present(ClearEditor.value()) {
         fh.file_rm(Editor)
             .expect("Could not remove editor config file");
     }
 
-    if cli_flags.is_present(ClearRepo.value()) || cli_flags.is_present(ClearEditor.value()) {
-        ::std::process::exit(0);
+    // Exit if any "clear" flag was provided
+    if args.is_present(ClearRepo.value()) || args.is_present(ClearEditor.value()) {
+        return None;
     }
 
-    if cli_flags.is_present("view") {
+    if args.is_present(View.value()) {
         match fh.config_read(Repo) {
             Ok(repo_path) => match open_pager_less(repo_path) {
                 Ok(_) => {
-                    ::std::process::exit(0);
+                    return None;
                 }
                 Err(e) => panic!(e),
             },
-            Err(_) => panic!("No path to repository found"),
+            Err(e) => panic!("No path to repository found: {}", e),
         }
     }
 
-    // If first time setup is carried out do not
-    // require an idea to be written down.
+    Some(())
+}
+
+fn run(fh: &FileHandler, printer: &mut Printer<StandardStream>, reader: &mut Reader<StdinLock>) {
     let mut is_first_time: bool = false;
 
     let repo_path: String = match fh.config_read(Repo) {
         Ok(file_path) => file_path,
         Err(_) => {
             is_first_time = true;
-            p.print_fts_banner();
+            printer.print_fts_banner();
             if !fh.config_dir_exists() {
                 fh.config_dir_create()
                     .expect("Unable to create dir to store config");
             }
 
-            p.print_input_header("Absolute path to your idea repo");
-            p.flush().unwrap();
-            let input_path: String = read!();
-            let copy_input_path: String = input_path.clone();
+            printer.print_input_header("Absolute path to your idea repo");
+            printer.flush().unwrap();
+            let input_repo_path = reader.read();
 
-            match fh.config_write(Repo, input_path) {
-                Ok(_) => copy_input_path,
+            match fh.config_write(Repo, &input_repo_path) {
+                Ok(_) => input_repo_path,
                 Err(e) => panic!("Unable to write your repo path to disk: {}", e),
             }
         }
@@ -122,7 +131,7 @@ fn main() {
                 "Other (provide path to binary)",
             ];
 
-            p.print_editor_selection_header();
+            printer.print_editor_selection_header();
             let index = Select::new()
                 .default(0)
                 .items(selections)
@@ -133,10 +142,9 @@ fn main() {
                 0 => s("/usr/bin/vi"),
                 1 => s("/usr/bin/nano"),
                 2 => {
-                    p.print_input_header("Path to editor binary");
-                    p.flush().unwrap();
-                    let editor_bin_path: String = read!();
-                    editor_bin_path
+                    printer.print_input_header("Path to editor binary");
+                    printer.flush().unwrap();
+                    reader.read()
                 }
                 _ => {
                     // TODO(simeg): Do not fall back, ask user again for options
@@ -146,21 +154,20 @@ fn main() {
                 }
             };
 
-            if !fh.file_exists(&input_path) {
+            if !fh.file_exists(&input_editor_path) {
                 panic!("Invalid editor path");
             }
 
-            let copy_input_path: String = input_path.clone();
-            match fh.config_write(Editor, input_path) {
-                Ok(_) => copy_input_path,
+            match fh.config_write(Editor, &input_editor_path) {
+                Ok(_) => input_editor_path,
                 Err(e) => panic!("Unable to write your editor path to disk: {}", e),
             }
         }
     };
 
     if !is_first_time {
-        p.print_input_header(">> Idea summary");
-        let commit_msg: String = r.read();
+        printer.print_input_header(">> Idea summary");
+        let commit_msg: String = reader.read();
         let readme_path: String = format!("{}/README.md", repo_path);
 
         match open_editor(&editor_path, &readme_path) {
@@ -170,11 +177,11 @@ fn main() {
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     } else {
-        p.println("First time setup complete. Happy ideation!");
+        printer.println("First time setup complete. Happy ideation!");
     }
 }
 
-fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
+fn open_editor(bin_path: &String, file_path: &String) -> io::Result<()> {
     match Command::new(bin_path).arg(file_path).status() {
         Ok(_) => Ok(()),
         Err(e) => {
@@ -187,7 +194,7 @@ fn open_editor(bin_path: &String, file_path: &String) -> Result<(), Error> {
     }
 }
 
-fn open_pager_less(repo_config_file: String) -> Result<(), Error> {
+fn open_pager_less(repo_config_file: String) -> io::Result<()> {
     let readme_path = &(repo_config_file + "/README.md");
     match Command::new(less()).arg(readme_path).status() {
         Ok(_) => Ok(()),

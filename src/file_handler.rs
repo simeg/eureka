@@ -42,7 +42,7 @@ pub trait ConfigManagement {
     fn config_dir_create(&self) -> io::Result<String>;
     fn config_dir_exists(&self) -> bool;
     fn config_read(&self, file: ConfigType) -> io::Result<String>;
-    fn config_write(&self, file: ConfigType, value: String) -> io::Result<()>;
+    fn config_write(&self, file: ConfigType, value: &String) -> io::Result<()>;
 }
 
 impl ConfigManagement for FileHandler {
@@ -83,7 +83,7 @@ impl ConfigManagement for FileHandler {
         Ok(contents)
     }
 
-    fn config_write(&self, config: ConfigType, value: String) -> io::Result<()> {
+    fn config_write(&self, config: ConfigType, value: &String) -> io::Result<()> {
         let config_path = &config_path_for(config);
         let path = path::Path::new(config_path);
 
