@@ -29,7 +29,7 @@ impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
     fn print_editor_selection_header(&mut self) {
         let text = "What editor do you want to use for writing down your ideas?";
         println_w_opts(&mut self.writer, text, Color::Green, true);
-        print(&mut self.writer, ""); // Don't make options for selecting editor also be colored
+        print(&mut self.writer, "");
     }
 
     fn print_fts_banner(&mut self) {
@@ -92,44 +92,4 @@ where
         .expect("Could not set color for stdout");
     writeln!(stdout, "{}", value).expect("Could not write to stdout");
     stdout.reset().expect("Could not reset stdout");
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    struct MockPrinter<W> {
-        pub writer: W,
-    }
-
-    impl<W: std::io::Write> Print for MockPrinter<W> {
-        fn println(&mut self, _value: &str) {
-            unimplemented!()
-        }
-
-        fn print_input_header(&mut self, _value: &str) {
-            unimplemented!()
-        }
-
-        fn print_editor_selection_header(&mut self) {
-            unimplemented!()
-        }
-
-        fn print_fts_banner(&mut self) {
-            unimplemented!()
-        }
-
-        fn flush(&mut self) -> io::Result<()> {
-            unimplemented!()
-        }
-    }
-
-    #[test]
-    fn tests_work() {
-        let mut _p = MockPrinter {
-            writer: io::stdout(),
-        };
-
-        assert_eq!(true, true);
-    }
 }
