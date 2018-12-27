@@ -16,7 +16,7 @@ pub trait Print {
     fn flush(&mut self) -> io::Result<()>;
 }
 
-impl<W: termcolor::WriteColor> Print for Printer<W> {
+impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
     fn println(&mut self, value: &str) {
         writeln!(self.writer, "{}", value).expect("Could not write to stdout");
     }
@@ -83,7 +83,7 @@ where
 
 fn println_w_opts<W>(stdout: &mut W, value: &str, color: Color, is_bold: bool)
 where
-    W: termcolor::WriteColor,
+    W: io::Write + termcolor::WriteColor,
 {
     let mut opts = ColorSpec::new();
     opts.set_fg(Some(color)).set_bold(is_bold);

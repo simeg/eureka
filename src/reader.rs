@@ -1,7 +1,7 @@
 use std::io;
 
-pub struct Reader<W> {
-    pub reader: W,
+pub struct Reader<R> {
+    pub reader: R,
 }
 
 pub trait Read {

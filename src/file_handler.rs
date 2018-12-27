@@ -146,7 +146,7 @@ mod tests {
             Ok(String::from("irrelevant"))
         }
 
-        fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
+        fn config_write(&self, _file: ConfigType, _value: &String) -> io::Result<()> {
             Ok(())
         }
     }

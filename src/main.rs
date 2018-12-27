@@ -11,14 +11,12 @@ use std::process::Command;
 
 use clap::{App, Arg, ArgMatches};
 use dialoguer::Select;
-use termcolor::ColorChoice;
-use termcolor::StandardStream;
+use termcolor::{ColorChoice, StandardStream};
 
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
-use std::io::StdinLock;
 use types::CliFlag::{ClearEditor, ClearRepo, ShortView, View};
 use types::ConfigType::{Editor, Repo};
 use utils::utils::exit_w_code;
@@ -98,31 +96,40 @@ fn handle_flags(args: ArgMatches, fh: &FileHandler) -> Option<()> {
     Some(())
 }
 
-fn run(fh: &FileHandler, printer: &mut Printer<StandardStream>, reader: &mut Reader<StdinLock>) {
-    let mut is_first_time: bool = false;
+fn run<FH, R>(fh: &FH, printer: &mut Printer<StandardStream>, reader: &mut Reader<R>)
+where
+    FH: FileManagement + ConfigManagement,
+    R: io::BufRead,
+{
+    let repo_path = get_repo_path(fh, printer, reader);
+    let editor_path = get_editor_path(fh, printer, reader);
 
-    let repo_path: String = match fh.config_read(Repo) {
-        Ok(file_path) => file_path,
-        Err(_) => {
-            is_first_time = true;
-            printer.print_fts_banner();
-            if !fh.config_dir_exists() {
-                fh.config_dir_create()
-                    .expect("Unable to create dir to store config");
+    if !is_first_time_run(fh) {
+        printer.print_input_header(">> Idea summary");
+        let commit_msg = reader.read();
+        let readme_path = format!("{}/README.md", repo_path);
+
+        match open_editor(&editor_path, &readme_path) {
+            Ok(_) => {
+                let _ = git_commit_and_push(&repo_path, commit_msg);
             }
+            Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
+        };
+    } else {
+        printer.println("First time setup complete. Happy ideation!");
+    }
+}
 
-            printer.print_input_header("Absolute path to your idea repo");
-            printer.flush().unwrap();
-            let input_repo_path = reader.read();
-
-            match fh.config_write(Repo, &input_repo_path) {
-                Ok(_) => input_repo_path,
-                Err(e) => panic!("Unable to write your repo path to disk: {}", e),
-            }
-        }
-    };
-
-    let editor_path: String = match fh.config_read(Editor) {
+fn get_editor_path<FH, R>(
+    fh: &FH,
+    printer: &mut Printer<StandardStream>,
+    reader: &mut Reader<R>,
+) -> String
+where
+    FH: FileManagement + ConfigManagement,
+    R: io::BufRead,
+{
+    match fh.config_read(Editor) {
         Ok(file_path) => file_path,
         Err(_) => {
             let selections = &[
@@ -163,21 +170,47 @@ fn run(fh: &FileHandler, printer: &mut Printer<StandardStream>, reader: &mut Rea
                 Err(e) => panic!("Unable to write your editor path to disk: {}", e),
             }
         }
-    };
+    }
+}
 
-    if !is_first_time {
-        printer.print_input_header(">> Idea summary");
-        let commit_msg: String = reader.read();
-        let readme_path: String = format!("{}/README.md", repo_path);
-
-        match open_editor(&editor_path, &readme_path) {
-            Ok(_) => {
-                let _ = git_commit_and_push(&repo_path, commit_msg);
+fn get_repo_path<FH, R>(
+    fh: &FH,
+    printer: &mut Printer<StandardStream>,
+    reader: &mut Reader<R>,
+) -> String
+where
+    FH: FileManagement + ConfigManagement,
+    R: io::BufRead,
+{
+    match fh.config_read(Repo) {
+        Ok(file_path) => file_path,
+        Err(_) => {
+            printer.print_fts_banner();
+            if !fh.config_dir_exists() {
+                fh.config_dir_create()
+                    .expect("Unable to create dir to store config");
             }
-            Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
-        };
-    } else {
-        printer.println("First time setup complete. Happy ideation!");
+
+            printer.print_input_header("Absolute path to your idea repo");
+            printer.flush().unwrap();
+            // TODO(simeg): Re-try if path is empty, or simply just don't accept empty input
+            let input_repo_path = reader.read();
+
+            match fh.config_write(Repo, &input_repo_path) {
+                Ok(_) => input_repo_path,
+                Err(e) => panic!("Unable to write your repo path to disk: {}", e),
+            }
+        }
+    }
+}
+
+fn is_first_time_run<FH>(fh: &FH) -> bool
+where
+    FH: ConfigManagement,
+{
+    match fh.config_read(Repo) {
+        Ok(_) => false,
+        Err(_) => true,
     }
 }
 
@@ -195,8 +228,8 @@ fn open_editor(bin_path: &String, file_path: &String) -> io::Result<()> {
 }
 
 fn open_pager_less(repo_config_file: String) -> io::Result<()> {
-    let readme_path = &(repo_config_file + "/README.md");
-    match Command::new(less()).arg(readme_path).status() {
+    let readme_path = format!("{}/README.md", repo_config_file);
+    match Command::new(less()).arg(&readme_path).status() {
         Ok(_) => Ok(()),
         Err(e) => {
             eprintln!(
@@ -216,10 +249,63 @@ fn less() -> String {
     }
 }
 
-/*
- * Helpers
-*/
-
 fn s(string: &str) -> String {
     string.to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io::Error;
+
+    use reader::Reader;
+    use types::ConfigType;
+
+    use super::*;
+
+    struct MockFileHandler;
+
+    impl FileManagement for MockFileHandler {
+        fn create_dir(&self, path: &str) -> Result<(), Error> {
+            unimplemented!()
+        }
+
+        fn file_exists(&self, path: &str) -> bool {
+            unimplemented!()
+        }
+
+        fn file_rm(&self, file: ConfigType) -> Result<(), Error> {
+            unimplemented!()
+        }
+    }
+
+    impl ConfigManagement for MockFileHandler {
+        fn config_dir_create(&self) -> Result<String, Error> {
+            unimplemented!()
+        }
+
+        fn config_dir_exists(&self) -> bool {
+            unimplemented!()
+        }
+
+        fn config_read(&self, file: ConfigType) -> Result<String, Error> {
+            unimplemented!()
+        }
+
+        fn config_write(&self, file: ConfigType, value: &String) -> Result<(), Error> {
+            unimplemented!()
+        }
+    }
+
+    #[test]
+    fn tests_work() {
+        let fh = MockFileHandler {};
+        //        let mut output = Vec::new();
+        let mut output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
+        let input = b"I'm George";
+        let mut reader = Reader { reader: &input[..] };
+        let mut printer = Printer { writer: output };
+        run(&fh, &mut printer, &mut reader);
+
+        assert_eq!(true, true);
+    }
 }
