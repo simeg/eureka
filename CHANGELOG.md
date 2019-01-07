@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.5.2
+* Use path to vim that's compatible with more operating systems
+* Add shorthand flag (`-v`) for viewing stored ideas 
+* Trim all user input
+
 ## Version 1.5.1
 * Abort early if any clear flag is present
 
