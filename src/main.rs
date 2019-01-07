@@ -108,7 +108,7 @@ fn main() {
         Ok(file_path) => file_path,
         Err(_) => {
             let selections = &[
-                "vim (/usr/bin/vim)",
+                "vim (/usr/bin/vi)",
                 "nano (/usr/bin/nano)",
                 "Other (provide path to binary)",
             ];
@@ -121,7 +121,7 @@ fn main() {
                 .unwrap();
 
             let input_path: String = match index {
-                0 => s("/usr/bin/vim"),
+                0 => s("/usr/bin/vi"),
                 1 => s("/usr/bin/nano"),
                 2 => {
                     p.print_input_header("Path to editor binary");
@@ -133,7 +133,7 @@ fn main() {
                     // TODO(simeg): Do not fall back, ask user again for options
                     // TODO(simeg): How can the user even end up here?
                     p.println("Invalid option, falling back to vim");
-                    s("/usr/bin/vim")
+                    s("/usr/bin/vi")
                 }
             };
 
