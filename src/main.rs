@@ -145,7 +145,7 @@ where
                 .interact()
                 .unwrap();
 
-            let input_path: String = match index {
+            let input_editor_path = match index {
                 0 => s("/usr/bin/vi"),
                 1 => s("/usr/bin/nano"),
                 2 => {
@@ -156,7 +156,7 @@ where
                 _ => {
                     // TODO(simeg): Do not fall back, ask user again for options
                     // TODO(simeg): How can the user even end up here?
-                    p.println("Invalid option, falling back to vim");
+                    printer.println("Invalid option, falling back to vim");
                     s("/usr/bin/vi")
                 }
             };
