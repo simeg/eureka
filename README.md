@@ -34,7 +34,7 @@ $ eureka
 
 When your idea is committed it's pushed to `origin/master`.
 
-To view your stored ideas use the `--view` flag.
+To view your stored ideas use the `-v` or `--view` flag.
 
 ```bash
 $ eureka --view
@@ -45,7 +45,7 @@ $ eureka --view
 ```bash
 --clear-editor    Clear the stored path to your idea editor
 --clear-repo      Clear the stored path to your idea repo
---view            View your ideas using less
+-v, --view        View your ideas using less
 ```
 
 ### Recommended alias
