@@ -191,10 +191,17 @@ where
                     .expect("Unable to create dir to store config");
             }
 
-            printer.print_input_header("Absolute path to your idea repo");
-            printer.flush().unwrap();
-            // TODO(simeg): Re-try if path is empty, or simply just don't accept empty input
-            let input_repo_path = reader.read();
+
+            // set input repo path as an empty string
+            let mut input_repo_path = String::new();
+
+            // as long as the path is empty
+            while input_repo_path.is_empty() {
+                // ask for the path again...
+                printer.print_input_header("Absolute path to your idea repo");
+                printer.flush().unwrap();
+                input_repo_path = reader.read();
+            }
 
             match fh.config_write(Repo, &input_repo_path) {
                 Ok(_) => input_repo_path,
