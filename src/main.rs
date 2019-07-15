@@ -242,11 +242,8 @@ fn open_pager_less(repo_config_file: String) -> io::Result<()> {
 }
 
 fn less() -> String {
-    if utils::utils::is_available("less") {
-        String::from("less")
-    } else {
-        panic!("Cannot locate executable - less - on your system")
-    }
+    utils::utils::get_if_available("less")
+        .expect("Cannot locate executable - less - on your system")
 }
 
 fn s(string: &str) -> String {

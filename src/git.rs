@@ -64,11 +64,7 @@ pub mod git {
     }
 
     fn git() -> String {
-        if utils::is_available("git") {
-            String::from("git")
-        } else {
-            panic!("Cannot locate executable - git - on your system")
-        }
+        utils::get_if_available("git").expect("Cannot locate executable - git - on your system")
     }
 
     fn default_args(repo_path: &String) -> [String; 2] {

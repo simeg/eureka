@@ -3,16 +3,16 @@ pub mod utils {
     use std::fs;
     use std::process;
 
-    pub fn is_available(program: &str) -> bool {
+    pub fn get_if_available(program: &str) -> Option<String> {
         if let Ok(path) = env::var("PATH") {
             for p in path.split(":") {
                 let p_str = format!("{}/{}", p, program);
                 if fs::metadata(p_str).is_ok() {
-                    return true;
+                    return Some(String::from(program));
                 }
             }
         }
-        false
+        None
     }
 
     pub fn exit_w_code(code: i32) {
