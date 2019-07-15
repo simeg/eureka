@@ -5,7 +5,7 @@ pub enum CliFlag {
     ShortView,
 }
 
-pub enum ConfigType {
+pub enum ConfigFile {
     Repo,
     Editor,
 }
@@ -21,11 +21,12 @@ impl CliFlag {
     }
 }
 
-impl ConfigType {
+impl ConfigFile {
     pub fn value(&self) -> &str {
         match *self {
-            ConfigType::Repo => "repo_path",
-            ConfigType::Editor => "editor_path",
+            // These represents files so underscore is preferred
+            ConfigFile::Repo => "repo_path",
+            ConfigFile::Editor => "editor_path",
         }
     }
 }

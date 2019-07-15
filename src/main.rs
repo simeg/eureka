@@ -18,7 +18,7 @@ use git::git::git_commit_and_push;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
 use types::CliFlag::{ClearEditor, ClearRepo, ShortView, View};
-use types::ConfigType::{Editor, Repo};
+use types::ConfigFile::{Editor, Repo};
 use utils::utils::exit_w_code;
 
 mod file_handler;
@@ -55,18 +55,18 @@ fn main() {
     let input = stdio.lock();
     let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
 
-    let mut p = Printer { writer: output };
-    let mut r = Reader { reader: input };
-    let fh = FileHandler {};
+    let mut printer = Printer { writer: output };
+    let mut reader = Reader { reader: input };
+    let file_handler = FileHandler {};
 
-    if handle_flags(cli_flags, &fh).is_none() {
+    if handle_flags(cli_flags, &file_handler).is_err() {
         exit_w_code(0);
     }
 
-    run(&fh, &mut p, &mut r);
+    run(&file_handler, &mut printer, &mut reader);
 }
 
-fn handle_flags(args: ArgMatches, fh: &FileHandler) -> Option<()> {
+fn handle_flags(args: ArgMatches, fh: &FileHandler) -> Result<(), ()> {
     if args.is_present(ClearRepo.value()) {
         fh.file_rm(Repo).expect("Could not remove repo config file");
     }
@@ -78,14 +78,14 @@ fn handle_flags(args: ArgMatches, fh: &FileHandler) -> Option<()> {
 
     // Exit if any "clear" flag was provided
     if args.is_present(ClearRepo.value()) || args.is_present(ClearEditor.value()) {
-        return None;
+        return Err(());
     }
 
     if args.is_present(View.value()) {
         match fh.config_read(Repo) {
             Ok(repo_path) => match open_pager_less(repo_path) {
                 Ok(_) => {
-                    return None;
+                    return Err(());
                 }
                 Err(e) => panic!(e),
             },
@@ -93,7 +93,7 @@ fn handle_flags(args: ArgMatches, fh: &FileHandler) -> Option<()> {
         }
     }
 
-    Some(())
+    Ok(())
 }
 
 fn run<FH, R>(fh: &FH, printer: &mut Printer<StandardStream>, reader: &mut Reader<R>)
@@ -255,7 +255,7 @@ mod tests {
     use std::io::Error;
 
     use reader::Reader;
-    use types::ConfigType;
+    use types::ConfigFile;
 
     use super::*;
 
@@ -270,7 +270,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn file_rm(&self, file: ConfigType) -> Result<(), Error> {
+        fn file_rm(&self, file: ConfigFile) -> Result<(), Error> {
             unimplemented!()
         }
     }
@@ -284,11 +284,11 @@ mod tests {
             unimplemented!()
         }
 
-        fn config_read(&self, file: ConfigType) -> Result<String, Error> {
+        fn config_read(&self, file: ConfigFile) -> Result<String, Error> {
             unimplemented!()
         }
 
-        fn config_write(&self, file: ConfigType, value: &String) -> Result<(), Error> {
+        fn config_write(&self, file: ConfigFile, value: &String) -> Result<(), Error> {
             unimplemented!()
         }
     }
