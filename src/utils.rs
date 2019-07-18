@@ -1,18 +1,17 @@
 pub mod utils {
-    use std::env;
-    use std::fs;
+    extern crate which;
+
     use std::process;
 
     pub fn get_if_available(program: &str) -> Option<String> {
-        if let Ok(path) = env::var("PATH") {
-            for p in path.split(":") {
-                let p_str = format!("{}/{}", p, program);
-                if fs::metadata(p_str).is_ok() {
-                    return Some(String::from(program));
-                }
-            }
+        match which::which(program) {
+            Ok(binary_path) => Some(String::from(
+                binary_path
+                    .to_str()
+                    .expect("Unable to convert PathBuf -> &str"),
+            )),
+            Err(_) => None,
         }
-        None
     }
 
     pub fn exit_w_code(code: i32) {

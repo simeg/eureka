@@ -20,6 +20,7 @@ clippy = {version = "0.0.175", optional = true}
 dirs = "1.0.4"
 dialoguer = "0.1.0"
 termcolor = "1.0.4"
+which = "2.0.1"
 
 [features]
 default = []
