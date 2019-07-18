@@ -1,11 +1,15 @@
 # Changelog
 
+## Version 1.6.1
+* If user inputs empty repo path - ask again
+* Make binary resolution work on Windows too
+
 ## Version 1.6.0
 * Remove unused `text_io` dependency
 
 ## Version 1.5.2
 * Use path to vim that's compatible with more operating systems
-* Add shorthand flag (`-v`) for viewing stored ideas 
+* Add shorthand flag (`-v`) for viewing stored ideas
 * Trim all user input
 
 ## Version 1.5.1
