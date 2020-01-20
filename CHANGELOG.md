@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 1.6.2
+* Include `Cargo.lock` in binary to make it possible to distribute via Homebrew
+
 ## Version 1.6.1
 * If user inputs empty repo path - ask again
 * Make binary resolution work on Windows too

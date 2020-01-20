@@ -208,7 +208,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "eureka"
-version = "1.6.1"
+version = "1.6.2"
 dependencies = [
  "clap 2.27.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.175 (registry+https://github.com/rust-lang/crates.io-index)",
