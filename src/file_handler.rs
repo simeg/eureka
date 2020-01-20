@@ -1,10 +1,8 @@
 extern crate dirs;
 
 use self::dirs::home_dir;
-use std::env::var;
 use std::error::Error;
 use std::io::{ErrorKind, Read, Write};
-use std::path::PathBuf;
 use std::{fs, io, path};
 use types::ConfigFile;
 
@@ -108,9 +106,10 @@ fn config_path_for(config_type: ConfigFile) -> String {
     };
 
     match home_dir() {
-        Some(home_dir) => format!(
-            "{xdg_config_home}/{file_name}",
-            xdg_config_home = resolve_xdg_config_home(home_dir),
+        Some(location) => format!(
+            "{home}/{eureka}/{file_name}",
+            home = location.display(),
+            eureka = ".eureka",
             file_name = file_name
         ),
         None => panic!("Could not resolve your $HOME directory"),
@@ -119,14 +118,7 @@ fn config_path_for(config_type: ConfigFile) -> String {
 
 fn config_dir_path() -> String {
     match home_dir() {
-        Some(home_dir) => resolve_xdg_config_home(home_dir),
+        Some(home_dir) => format!("{}/{}", home_dir.display(), ".eureka"),
         None => panic!("Could not resolve your $HOME directory"),
-    }
-}
-
-fn resolve_xdg_config_home(home_dir: PathBuf) -> String {
-    match var("XDG_CONFIG_HOME") {
-        Ok(val) => format!("{xdg_config_home}/eureka", xdg_config_home = val),
-        Err(_) => format!("{home}/.config/eureka", home = home_dir.display()),
     }
 }
