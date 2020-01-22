@@ -20,6 +20,12 @@ it. And since it's your own repository you can make it private to keep your idea
 $ cargo install eureka
 ```
 
+### Install via Homebrew
+
+```bash
+$ brew install eureka
+```
+
 Use the same command to update `eureka` to the latest version.
 
 ## Usage
