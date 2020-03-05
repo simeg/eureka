@@ -43,19 +43,20 @@ fn main() {
         )
         .get_matches();
 
-    let eureka = Eureka {};
-
     let stdio = io::stdin();
     let input = stdio.lock();
     let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
 
-    let mut printer = Printer { writer: output };
-    let mut reader = Reader { reader: input };
-    let file_handler = FileHandler {};
+    let mut eureka = Eureka {
+        fh: FileHandler {},
+        // TODO: Replace reader and writer with single Environment/IO type?
+        reader: Reader { reader: input },
+        printer: Printer { writer: output },
+    };
 
-    if eureka.handle_flags(cli_flags, &file_handler).is_err() {
+    if eureka.handle_flags(cli_flags).is_err() {
         exit_w_code(0);
     }
 
-    eureka.run(&file_handler, &mut printer, &mut reader);
+    eureka.run();
 }

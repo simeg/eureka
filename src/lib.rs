@@ -5,12 +5,13 @@ extern crate clap;
 extern crate dialoguer;
 extern crate termcolor;
 
-use std::io;
-use std::process::Command;
-
 use clap::ArgMatches;
 use dialoguer::Select;
-use termcolor::StandardStream;
+use termcolor::{StandardStream, WriteColor};
+
+use std::io;
+use std::io::{BufRead, Write};
+use std::process::Command;
 
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::git::git_commit_and_push;
@@ -26,16 +27,27 @@ pub mod reader;
 pub mod types;
 pub mod utils;
 
-pub struct Eureka {}
+pub struct Eureka<W, R> {
+    pub fh: FileHandler,
+    pub printer: Printer<W>,
+    pub reader: Reader<R>,
+}
 
-impl Eureka {
-    pub fn handle_flags(&self, args: ArgMatches, fh: &FileHandler) -> Result<(), ()> {
+impl<W, R> Eureka<W, R>
+where
+    W: Write + WriteColor,
+    R: BufRead,
+{
+    pub fn handle_flags(&self, args: ArgMatches) -> Result<(), ()> {
         if args.is_present(ClearRepo.value()) {
-            fh.file_rm(Repo).expect("Could not remove repo config file");
+            self.fh
+                .file_rm(Repo)
+                .expect("Could not remove repo config file");
         }
 
         if args.is_present(ClearEditor.value()) {
-            fh.file_rm(Editor)
+            self.fh
+                .file_rm(Editor)
                 .expect("Could not remove editor config file");
         }
 
@@ -45,7 +57,7 @@ impl Eureka {
         }
 
         if args.is_present(View.value()) {
-            match fh.config_read(Repo) {
+            match self.fh.config_read(Repo) {
                 Ok(repo_path) => match self.open_pager_less(repo_path) {
                     Ok(_) => {
                         return Err(());
@@ -59,17 +71,13 @@ impl Eureka {
         Ok(())
     }
 
-    pub fn run<FH, R>(&self, fh: &FH, printer: &mut Printer<StandardStream>, reader: &mut Reader<R>)
-    where
-        FH: FileManagement + ConfigManagement,
-        R: io::BufRead,
-    {
-        let repo_path = self.get_repo_path(fh, printer, reader);
-        let editor_path = self.get_editor_path(fh, printer, reader);
+    pub fn run(&mut self) {
+        let repo_path = self.get_repo_path();
+        let editor_path = self.get_editor_path();
 
-        if !self.is_first_time_run(fh) {
-            printer.print_input_header(">> Idea summary");
-            let commit_msg = reader.read();
+        if !self.is_first_time_run() {
+            self.printer.print_input_header(">> Idea summary");
+            let commit_msg = self.reader.read();
             let readme_path = format!("{}/README.md", repo_path);
 
             match self.open_editor(&editor_path, &readme_path) {
@@ -79,21 +87,13 @@ impl Eureka {
                 Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
             };
         } else {
-            printer.println("First time setup complete. Happy ideation!");
+            self.printer
+                .println("First time setup complete. Happy ideation!");
         }
     }
 
-    fn get_editor_path<FH, R>(
-        &self,
-        fh: &FH,
-        printer: &mut Printer<StandardStream>,
-        reader: &mut Reader<R>,
-    ) -> String
-    where
-        FH: FileManagement + ConfigManagement,
-        R: io::BufRead,
-    {
-        match fh.config_read(Editor) {
+    fn get_editor_path(&mut self) -> String {
+        match self.fh.config_read(Editor) {
             Ok(file_path) => file_path,
             Err(_) => {
                 let selections = &[
@@ -102,7 +102,7 @@ impl Eureka {
                     "Other (provide path to binary)",
                 ];
 
-                printer.print_editor_selection_header();
+                self.printer.print_editor_selection_header();
                 let index = Select::new()
                     .default(0)
                     .items(selections)
@@ -113,23 +113,23 @@ impl Eureka {
                     0 => self.s("/usr/bin/vi"),
                     1 => self.s("/usr/bin/nano"),
                     2 => {
-                        printer.print_input_header("Path to editor binary");
-                        printer.flush().unwrap();
-                        reader.read()
+                        self.printer.print_input_header("Path to editor binary");
+                        self.printer.flush().unwrap();
+                        self.reader.read()
                     }
                     _ => {
                         // TODO(simeg): Do not fall back, ask user again for options
                         // TODO(simeg): How can the user even end up here?
-                        printer.println("Invalid option, falling back to vim");
+                        self.printer.println("Invalid option, falling back to vim");
                         self.s("/usr/bin/vi")
                     }
                 };
 
-                if !fh.file_exists(&input_editor_path) {
+                if !self.fh.file_exists(&input_editor_path) {
                     panic!("Invalid editor path");
                 }
 
-                match fh.config_write(Editor, &input_editor_path) {
+                match self.fh.config_write(Editor, &input_editor_path) {
                     Ok(_) => input_editor_path,
                     Err(e) => panic!("Unable to write your editor path to disk: {}", e),
                 }
@@ -137,22 +137,14 @@ impl Eureka {
         }
     }
 
-    fn get_repo_path<FH, R>(
-        &self,
-        fh: &FH,
-        printer: &mut Printer<StandardStream>,
-        reader: &mut Reader<R>,
-    ) -> String
-    where
-        FH: FileManagement + ConfigManagement,
-        R: io::BufRead,
-    {
-        match fh.config_read(Repo) {
+    fn get_repo_path(&mut self) -> String {
+        match self.fh.config_read(Repo) {
             Ok(file_path) => file_path,
             Err(_) => {
-                printer.print_fts_banner();
-                if !fh.config_dir_exists() {
-                    fh.config_dir_create()
+                self.printer.print_fts_banner();
+                if !self.fh.config_dir_exists() {
+                    self.fh
+                        .config_dir_create()
                         .expect("Unable to create dir to store config");
                 }
 
@@ -162,12 +154,13 @@ impl Eureka {
                 // as long as the path is empty
                 while input_repo_path.is_empty() {
                     // ask for the path again...
-                    printer.print_input_header("Absolute path to your idea repo");
-                    printer.flush().unwrap();
-                    input_repo_path = reader.read();
+                    self.printer
+                        .print_input_header("Absolute path to your idea repo");
+                    self.printer.flush().unwrap();
+                    input_repo_path = self.reader.read();
                 }
 
-                match fh.config_write(Repo, &input_repo_path) {
+                match self.fh.config_write(Repo, &input_repo_path) {
                     Ok(_) => input_repo_path,
                     Err(e) => panic!("Unable to write your repo path to disk: {}", e),
                 }
@@ -175,11 +168,8 @@ impl Eureka {
         }
     }
 
-    fn is_first_time_run<FH>(&self, fh: &FH) -> bool
-    where
-        FH: ConfigManagement,
-    {
-        match fh.config_read(Repo) {
+    fn is_first_time_run(&self) -> bool {
+        match self.fh.config_read(Repo) {
             Ok(_) => false,
             Err(_) => true,
         }
