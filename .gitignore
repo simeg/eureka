@@ -6,3 +6,4 @@
 **/*.rs.bk
 
 eureka
+cmake-build-debug/
