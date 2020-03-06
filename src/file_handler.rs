@@ -86,6 +86,7 @@ impl ConfigManagement for FileHandler {
         let config_path = &config_path_for(config);
         let path = path::Path::new(config_path);
 
+        // Create file if it doesn't exist
         let mut file = match fs::File::create(&path) {
             Err(e) => panic!("Couldn't create {}: {}", path.display(), e.to_string()),
             Ok(file) => file,
