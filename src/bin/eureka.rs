@@ -49,7 +49,6 @@ fn main() {
 
     let mut eureka = Eureka {
         fh: FileHandler {},
-        // TODO: Replace reader and writer with single Environment/IO type?
         reader: Reader { reader: input },
         printer: Printer { writer: output },
     };
