@@ -1,7 +1,6 @@
 extern crate dirs;
 
 use self::dirs::home_dir;
-use std::error::Error;
 use std::io::{ErrorKind, Read, Write};
 use std::{fs, io, path};
 use types::ConfigFile;
@@ -87,13 +86,14 @@ impl ConfigManagement for FileHandler {
         let config_path = &config_path_for(config);
         let path = path::Path::new(config_path);
 
+        // Create file if it doesn't exist
         let mut file = match fs::File::create(&path) {
-            Err(e) => panic!("Couldn't create {}: {}", path.display(), e.description()),
+            Err(e) => panic!("Couldn't create {}: {}", path.display(), e.to_string()),
             Ok(file) => file,
         };
 
         match file.write_all(value.as_bytes()) {
-            Err(e) => panic!("Couldn't write to {}: {}", path.display(), e.description()),
+            Err(e) => panic!("Couldn't write to {}: {}", path.display(), e.to_string()),
             Ok(_) => Ok(()),
         }
     }
