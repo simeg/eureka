@@ -22,18 +22,29 @@ impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
     }
 
     fn print_input_header(&mut self, value: &str) {
-        println_w_opts(&mut self.writer, value, Color::Green, true);
+        let opts = PrintOptions {
+            color: Color::Green,
+            is_bold: true,
+        };
+        println(&mut self.writer, value, opts);
         print(&mut self.writer, "> ");
     }
 
     fn print_editor_selection_header(&mut self) {
+        let opts = PrintOptions {
+            color: Color::Green,
+            is_bold: true,
+        };
         let text = "What editor do you want to use for writing down your ideas?";
-        println_w_opts(&mut self.writer, text, Color::Green, true);
+        println(&mut self.writer, text, opts);
         print(&mut self.writer, "");
     }
 
     fn print_fts_banner(&mut self) {
-        let color = Color::Yellow;
+        let opts = PrintOptions {
+            color: Color::Yellow,
+            is_bold: false,
+        };
         let banner = format!(
             "{}\n{}{}{}{}{}\n{}",
             "#".repeat(60),
@@ -64,7 +75,7 @@ impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
             row7,
         ];
         for row in &rows {
-            println_w_opts(&mut self.writer, row, color, false);
+            println(&mut self.writer, row, opts);
         }
     }
 
@@ -81,14 +92,20 @@ where
     stdout.flush().expect("Could not flush stdout");
 }
 
-fn println_w_opts<W>(stdout: &mut W, value: &str, color: Color, is_bold: bool)
+#[derive(Clone, Copy)]
+struct PrintOptions {
+    color: Color,
+    is_bold: bool,
+}
+
+fn println<W>(stdout: &mut W, value: &str, opts: PrintOptions)
 where
     W: io::Write + termcolor::WriteColor,
 {
-    let mut opts = ColorSpec::new();
-    opts.set_fg(Some(color)).set_bold(is_bold);
+    let mut color_spec = ColorSpec::new();
+    color_spec.set_fg(Some(opts.color)).set_bold(opts.is_bold);
     stdout
-        .set_color(&opts)
+        .set_color(&color_spec)
         .expect("Could not set color for stdout");
     writeln!(stdout, "{}", value).expect("Could not write to stdout");
     stdout.reset().expect("Could not reset stdout");
