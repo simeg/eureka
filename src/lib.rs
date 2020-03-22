@@ -37,13 +37,15 @@ where
     R: BufRead,
 {
     pub fn run(&mut self) {
-        if self.is_first_time_run() {
-            // If config dir is missing - create it
-            if !self.fh.config_dir_exists() {
-                self.fh.config_dir_create().unwrap();
-            }
+        if self.is_config_missing() {
+            if self.is_first_time_run() {
+                // If config dir is missing - create it
+                if !self.fh.config_dir_exists() {
+                    self.fh.config_dir_create().unwrap();
+                }
 
-            self.printer.print_fts_banner();
+                self.printer.print_fts_banner();
+            }
 
             // If repo path is missing - ask for it
             if self.fh.config_read(Repo).is_err() {
@@ -56,24 +58,26 @@ where
             }
 
             self.printer
-                .println("First time setup complete. Happy ideation!");
+                .print("First time setup complete. Happy ideation!");
         } else {
             self.input_idea();
         }
     }
 
     pub fn clear_repo(&self) {
-        // TODO: Only remove if available
-        self.fh
-            .file_rm(Repo)
-            .expect("Could not remove repo config file");
+        if self.fh.config_read(Repo).is_ok() {
+            self.fh
+                .file_rm(Repo)
+                .expect("Could not remove repo config file");
+        }
     }
 
     pub fn clear_editor(&self) {
-        // TODO: Only remove if available
-        self.fh
-            .file_rm(Editor)
-            .expect("Could not remove editor config file");
+        if self.fh.config_read(Editor).is_ok() {
+            self.fh
+                .file_rm(Editor)
+                .expect("Could not remove editor config file");
+        }
     }
 
     pub fn open_idea_file(&self) {
@@ -93,61 +97,53 @@ where
             input_repo_path = self.reader.read();
         }
 
-        self.fh.config_write(Repo, &input_repo_path)
+        self.fh.config_write(Repo, input_repo_path)
     }
 
     fn setup_editor_path(&mut self) -> io::Result<()> {
         self.printer.print_editor_selection_header();
 
-        // TODO: Check $PATH for these binaries
-        let selections = &[
-            "vim (/usr/bin/vi)",
-            "nano (/usr/bin/nano)",
-            "Other (provide path to binary)",
-        ];
         let select_index = Select::new()
             .default(0)
-            .items(selections)
+            .items(&["vim", "nano", "Other (provide name, e.g. 'emacs')"])
             .interact()
             .unwrap();
 
-        let input_editor_path = match select_index {
-            0 => String::from("/usr/bin/vi"),
-            1 => String::from("/usr/bin/nano"),
+        let chosen_editor = match select_index {
+            0 => "vim".to_string(),
+            1 => "nano".to_string(),
             2 => {
-                self.printer.print_input_header("Path to editor binary");
+                self.printer.print_input_header("");
                 self.printer.flush().unwrap();
                 self.reader.read()
             }
-            _ => {
-                // TODO(simeg): Do not fall back, ask user again for options
-                // TODO(simeg): How can the user even end up here?
-                self.printer.println("Invalid option, falling back to vim");
-                String::from("/usr/bin/vi")
-            }
+            _ => panic!("You should not be able to get here"),
         };
 
-        if !self.fh.file_exists(&input_editor_path) {
-            panic!("Invalid editor path");
-        }
+        let editor_path = get_if_available(chosen_editor.as_str())
+            .expect(format!("Could not find executable for {} - aborting", chosen_editor).as_str());
 
-        self.fh.config_write(Editor, &input_editor_path)
+        self.fh.config_write(Editor, editor_path)
     }
 
     fn is_first_time_run(&self) -> bool {
-        self.fh.config_read(Repo).is_err()
+        self.fh.config_read(Repo).is_err() && self.fh.config_read(Editor).is_err()
+    }
+
+    fn is_config_missing(&self) -> bool {
+        self.fh.config_read(Repo).is_err() || self.fh.config_read(Editor).is_err()
     }
 
     fn input_idea(&mut self) {
         self.printer.print_input_header(">> Idea summary");
-        let commit_msg = self.reader.read();
+        let idea_summary = self.reader.read();
 
         let editor_path = self.fh.config_read(Editor).unwrap();
         let repo_path = self.fh.config_read(Repo).unwrap();
         let readme_path = format!("{}/README.md", repo_path);
 
         match self.open_editor(&editor_path, &readme_path) {
-            Ok(_) => git_commit_and_push(&repo_path, commit_msg).unwrap(),
+            Ok(_) => git_commit_and_push(&repo_path, idea_summary).unwrap(),
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     }
