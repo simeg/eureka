@@ -136,14 +136,14 @@ where
 
     fn input_idea(&mut self) {
         self.printer.print_input_header(">> Idea summary");
-        let commit_msg = self.reader.read();
+        let idea_summary = self.reader.read();
 
         let editor_path = self.fh.config_read(Editor).unwrap();
         let repo_path = self.fh.config_read(Repo).unwrap();
         let readme_path = format!("{}/README.md", repo_path);
 
         match self.open_editor(&editor_path, &readme_path) {
-            Ok(_) => git_commit_and_push(&repo_path, commit_msg).unwrap(),
+            Ok(_) => git_commit_and_push(&repo_path, idea_summary).unwrap(),
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     }

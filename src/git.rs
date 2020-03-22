@@ -3,9 +3,9 @@ pub mod git {
     use std::process::Command;
     use utils::utils;
 
-    pub fn git_commit_and_push(repo_path: &String, msg: String) -> Result<()> {
+    pub fn git_commit_and_push(repo_path: &String, subject: String) -> Result<()> {
         git_add(repo_path)
-            .and(git_commit(repo_path, msg))
+            .and(git_commit(repo_path, subject))
             .and(git_push(repo_path))
     }
 
@@ -24,12 +24,12 @@ pub mod git {
         }
     }
 
-    fn git_commit(repo_path: &String, msg: String) -> Result<()> {
+    fn git_commit(repo_path: &String, subject: String) -> Result<()> {
         match Command::new(git())
             .args(default_args(repo_path).iter())
             .arg("commit")
             .arg("-m")
-            .arg(msg)
+            .arg(subject)
             .status()
         {
             Ok(_) => Ok(()),
