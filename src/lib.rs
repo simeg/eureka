@@ -58,7 +58,7 @@ where
             }
 
             self.printer
-                .println("First time setup complete. Happy ideation!");
+                .print("First time setup complete. Happy ideation!");
         } else {
             self.input_idea();
         }
