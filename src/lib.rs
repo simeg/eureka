@@ -63,17 +63,19 @@ where
     }
 
     pub fn clear_repo(&self) {
-        // TODO: Only remove if available
-        self.fh
-            .file_rm(Repo)
-            .expect("Could not remove repo config file");
+        if self.fh.config_read(Repo).is_ok() {
+            self.fh
+                .file_rm(Repo)
+                .expect("Could not remove repo config file");
+        }
     }
 
     pub fn clear_editor(&self) {
-        // TODO: Only remove if available
-        self.fh
-            .file_rm(Editor)
-            .expect("Could not remove editor config file");
+        if self.fh.config_read(Editor).is_ok() {
+            self.fh
+                .file_rm(Editor)
+                .expect("Could not remove editor config file");
+        }
     }
 
     pub fn open_idea_file(&self) {
