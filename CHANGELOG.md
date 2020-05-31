@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 1.6.3
+* Refactor code to be more idiomatic and readable
+* Only remove repo/editor if they exist
+* Verify chosen editor exists on $PATH before finish setup
+* Update deps to latest versions
+
 ## Version 1.6.2
 * Include `Cargo.lock` in binary to make it possible to distribute via Homebrew
 
