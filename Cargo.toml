@@ -4,9 +4,9 @@ version = "1.6.2"
 authors = ["Simon Egersand <s.egersand@gmail.com>"]
 description = "CLI tool to input and store your ideas without leaving the terminal"
 categories = ["command-line-interface", "command-line-utilities"]
+keywords = ["command-line-tool", "cli", "productivity", "idea", "ideas"]
 documentation = "https://github.com/simeg/eureka/blob/master/README.md"
 homepage = "https://github.com/simeg/eureka"
-keywords = ["command-line-tool", "cli", "productivity", "idea", "ideas"]
 repository = "https://github.com/simeg/eureka"
 readme = "README.md"
 license = "MIT"
@@ -15,12 +15,8 @@ exclude = [
 ]
 
 [dependencies]
-clap = "~2.27.0"
-clippy = {version = "0.0.175", optional = true}
-dirs = "1.0.4"
-dialoguer = "0.1.0"
-termcolor = "1.0.4"
-which = "2.0.1"
-
-[features]
-default = []
+clap = "2.33.1"
+dirs = "2.0.2"
+dialoguer = "0.6.2"
+termcolor = "1.1.0"
+which = "4.0.0"
