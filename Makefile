@@ -11,7 +11,7 @@ check:
 
 # TODO(simeg): Disabled until I can figure out how to make it pass on all releases
 #ci: lint build test
-ci: build test
+ci: lint build test
 	@echo "Everything's OK 🤘"
 
 clean:

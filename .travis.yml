@@ -5,13 +5,10 @@ rust:
   - beta
   - nightly
 
-before_script:
-  - rustup component add rustfmt-preview
+script: make ci
 
 cache:
   cargo: true
-
-script: make ci
 
 env:
   global:
