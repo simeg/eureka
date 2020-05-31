@@ -66,17 +66,17 @@ impl ConfigManagement for FileHandler {
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .expect(&format!("Unable to read config at: {}", config_path));
+            .unwrap_or_else(|_| panic!("Unable to read config at: {}", config_path));
 
         if contents.is_empty() {
             return Err(io::Error::new(
                 ErrorKind::NotFound,
                 format!("File is empty: {}", &config_path),
             ));
-        } else if contents.ends_with("\n") {
+        } else if contents.ends_with('\n') {
             contents
                 .pop()
-                .expect(&format!("File is empty: {}", &config_path));
+                .unwrap_or_else(|| panic!("File is empty: {}", &config_path));
         }
 
         Ok(contents)

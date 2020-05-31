@@ -18,7 +18,7 @@ clean:
 	rm -rf ./target
 
 clippy:
-	@$(CARGO) +nightly clippy
+	@$(CARGO) clippy
 
 fmt: format
 

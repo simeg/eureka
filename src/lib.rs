@@ -1,6 +1,3 @@
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-
 extern crate dialoguer;
 extern crate termcolor;
 
@@ -12,11 +9,10 @@ use std::io::{BufRead, Write};
 use std::process::Command;
 
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
-use git::git::git_commit_and_push;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
 use types::ConfigFile::{Editor, Repo};
-use utils::utils::get_if_available;
+use utils::get_if_available;
 
 pub mod file_handler;
 mod git;
@@ -120,8 +116,9 @@ where
             _ => panic!("You should not be able to get here"),
         };
 
-        let editor_path = get_if_available(chosen_editor.as_str())
-            .expect(format!("Could not find executable for {} - aborting", chosen_editor).as_str());
+        let editor_path = get_if_available(chosen_editor.as_str()).unwrap_or_else(|| {
+            panic!("Could not find executable for {} - aborting", chosen_editor)
+        });
 
         self.fh.config_write(Editor, editor_path)
     }
@@ -143,12 +140,12 @@ where
         let readme_path = format!("{}/README.md", repo_path);
 
         match self.open_editor(&editor_path, &readme_path) {
-            Ok(_) => git_commit_and_push(&repo_path, idea_summary).unwrap(),
+            Ok(_) => git::commit_and_push(&repo_path, idea_summary).unwrap(),
             Err(e) => panic!("Could not open editor at path {}: {}", editor_path, e),
         };
     }
 
-    fn open_editor(&self, bin_path: &String, file_path: &String) -> io::Result<()> {
+    fn open_editor(&self, bin_path: &str, file_path: &str) -> io::Result<()> {
         match Command::new(bin_path).arg(file_path).status() {
             Ok(_) => Ok(()),
             Err(e) => {

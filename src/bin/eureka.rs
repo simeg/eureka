@@ -1,6 +1,4 @@
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-
+#![allow(clippy::useless_let_if_seq)]
 extern crate eureka;
 
 #[macro_use]
@@ -17,7 +15,7 @@ use eureka::file_handler::FileHandler;
 use eureka::printer::Printer;
 use eureka::reader::Reader;
 use eureka::types::CliFlag::*;
-use eureka::utils::utils::exit_w_code;
+use eureka::utils::exit_w_code;
 use eureka::Eureka;
 
 fn main() {
