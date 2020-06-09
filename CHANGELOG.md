@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.7.0
+* Use $EDITOR to edit ideas, fall back to vi
+* Use $PAGER to view ideas, fall back to less
+
 ## Version 1.6.3
 * Refactor code to be more idiomatic and readable
 * Only remove repo/editor if they exist
