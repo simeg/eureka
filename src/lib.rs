@@ -4,9 +4,9 @@ extern crate termcolor;
 use dialoguer::Select;
 use termcolor::WriteColor;
 
-use std::io;
 use std::io::{BufRead, Write};
 use std::process::Command;
+use std::{env, io};
 
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use printer::{Print, Printer};
@@ -78,7 +78,7 @@ where
 
     pub fn open_idea_file(&self) {
         match self.fh.config_read(Repo) {
-            Ok(repo_path) => self.open_pager_less(repo_path).unwrap(),
+            Ok(repo_path) => self.open_pager(repo_path).unwrap(),
             Err(e) => panic!("No path to repository found: {}", e),
         }
     }
@@ -158,17 +158,20 @@ where
         }
     }
 
-    // TODO: Make binary configurable? Flag for output to stdout?
-    fn open_pager_less(&self, repo_config_file: String) -> io::Result<()> {
+    fn open_pager(&self, repo_config_file: String) -> io::Result<()> {
         let readme_path = format!("{}/README.md", repo_config_file);
-        let less_path =
-            get_if_available("less").expect("Cannot locate executable - less - on your system");
-        match Command::new(less_path).arg(&readme_path).status() {
+        let pager = match env::var("PAGER") {
+            Ok(p) => p,
+            Err(_) => {
+                get_if_available("less").expect("Cannot locate executable - less - on your system")
+            }
+        };
+        match Command::new(&pager).arg(&readme_path).status() {
             Ok(_) => Ok(()),
             Err(e) => {
                 eprintln!(
-                    "Error: Could not open idea file with less at [{}]: {}",
-                    readme_path, e
+                    "Error: Could not open idea file with {} at [{}]: {}",
+                    pager, readme_path, e
                 );
                 Err(e)
             }

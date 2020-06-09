@@ -36,7 +36,8 @@ setup. This configuration will be stored in `~/.eureka/`.
 After the setup simply run `eureka` to capture an idea. It will then be 
 committed and pushed to `origin/master`.
 
-View your stored ideas in less with the `-v` or `--view` flag.
+View your stored ideas in `$PAGER` env variable (falls back to `less`) with the
+`-v` or `--view` flag.
 
 ```sh
 $ eureka --view
@@ -47,7 +48,7 @@ $ eureka --view
 ```sh
 --clear-editor    Clear the stored path to your idea editor
 --clear-repo      Clear the stored path to your idea repo
--v, --view        View your ideas using less
+-v, --view        View ideas with your $PAGER env variable. If unset use less
 ```
 
 ### Recommended alias
