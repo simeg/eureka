@@ -17,6 +17,10 @@ is the default structure when you create an empty repository with a readme on
 GitHub, so it's easy to start using it. And since it's your own repository you
 can make it private to keep your ideas secret.
 
+`eureka` looks at your environment variables to decide what program to use.
+* `$EDITOR` for what to edit your ideas with (falls back to `vim`)
+* `$PAGER` for what to view your ideas with (falls back to `less`)
+
 ## Installation
 
 **[Homebrew](https://brew.sh/)**
@@ -30,14 +34,13 @@ $ cargo install eureka
 ```
 
 ## Usage
-The first time you run `eureka` it will ask a few questions regarding your
-setup. This configuration will be stored in `~/.eureka/`.
+The first time you run `eureka` it will ask for the path to your ideas repo.
+This configuration will be stored in `~/.eureka/`.
 
 After the setup simply run `eureka` to capture an idea. It will then be 
 committed and pushed to `origin/master`.
 
-View your stored ideas in `$PAGER` env variable (falls back to `less`) with the
-`-v` or `--view` flag.
+View your stored ideas with the `-v` or `--view` flag.
 
 ```sh
 $ eureka --view
@@ -46,9 +49,8 @@ $ eureka --view
 ### Flags
 
 ```sh
---clear-editor    Clear the stored path to your idea editor
---clear-repo      Clear the stored path to your idea repo
--v, --view        View ideas with your $PAGER env variable. If unset use less
+--clear-repo    Clear the stored path to your idea repo
+-v, --view      View ideas with your $PAGER env variable. If unset use less
 ```
 
 ### Recommended alias
