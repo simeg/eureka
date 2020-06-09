@@ -18,7 +18,7 @@ GitHub, so it's easy to start using it. And since it's your own repository you
 can make it private to keep your ideas secret.
 
 `eureka` looks at your environment variables to decide what program to use.
-* `$EDITOR` for what to edit your ideas with (falls back to `vim`)
+* `$EDITOR` for what to edit your ideas with (falls back to `vi`)
 * `$PAGER` for what to view your ideas with (falls back to `less`)
 
 ## Installation

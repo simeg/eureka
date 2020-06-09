@@ -106,7 +106,7 @@ where
         let editor = match env::var("EDITOR") {
             Ok(e) => e,
             Err(_) => {
-                get_if_available("vim").expect("Cannot locate executable - vim - on your system")
+                get_if_available("vi").expect("Cannot locate executable - vi - on your system")
             }
         };
         match Command::new(&editor).arg(file_path).status() {
