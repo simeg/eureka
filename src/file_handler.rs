@@ -102,7 +102,6 @@ impl ConfigManagement for FileHandler {
 fn config_path_for(config_type: ConfigFile) -> String {
     let file_name = match config_type {
         ConfigFile::Repo => ConfigFile::Repo.value(),
-        ConfigFile::Editor => ConfigFile::Editor.value(),
     };
 
     match home_dir() {

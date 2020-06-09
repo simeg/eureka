@@ -17,6 +17,5 @@ exclude = [
 [dependencies]
 clap = "2.33.1"
 dirs = "2.0.2"
-dialoguer = "0.6.2"
 termcolor = "1.1.0"
 which = "4.0.0"
