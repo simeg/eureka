@@ -37,7 +37,7 @@ fn main() {
             Arg::with_name(View.value())
                 .long(View.value())
                 .short(ShortView.value())
-                .help("View your ideas using less"),
+                .help("View ideas with your $PAGER env variable. If unset use less"),
         )
         .get_matches();
 
