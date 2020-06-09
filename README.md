@@ -1,13 +1,13 @@
 # eureka [![Crate Status](https://img.shields.io/crates/v/eureka.svg)](https://crates.io/crates/eureka)  [![Build Status](https://travis-ci.com/simeg/eureka.svg?branch=master)](https://travis-ci.com/simeg/eureka)
-`eureka` is a CLI tool that allows you to quickly write down your idea with the
-editor of your choice, and then have the idea committed and pushed to your idea
+`eureka` is a CLI tool that allows you to quickly write down an idea using your
+preferred editor, and then have the idea committed and pushed to your idea
 git repository.
 
 Imagine working on something important and then having an idea. Instead of
 letting your idea slip by you can just type `eureka` and you're able to quickly
 store your idea and then continue working.
 
-**It's developed _by_ and _for_ people who enjoy using the terminal.**
+**It is developed _by_ and _for_ people who enjoy using the terminal.**
 
 ![demo](assets/demo.gif)
 
@@ -19,13 +19,13 @@ can make it private to keep your ideas secret.
 
 ## Installation
 
-### Homebrew
-```bash
+**[Homebrew](https://brew.sh/)**
+```sh
 $ brew install eureka
 ```
 
-### Cargo
-```bash
+**[Cargo](https://doc.rust-lang.org/cargo)**
+```sh
 $ cargo install eureka
 ```
 
@@ -33,23 +33,18 @@ $ cargo install eureka
 The first time you run `eureka` it will ask a few questions regarding your
 setup. This configuration will be stored in `~/.eureka/`.
 
-After the setup is complete you simply run:
+After the setup simply run `eureka` to capture an idea. It will then be 
+committed and pushed to `origin/master`.
 
-```bash
-$ eureka
-```
+View your stored ideas in less with the `-v` or `--view` flag.
 
-When your idea is committed it's pushed to `origin/master`.
-
-To view your stored ideas use the `-v` or `--view` flag.
-
-```bash
+```sh
 $ eureka --view
 ```
 
 ### Flags
 
-```bash
+```sh
 --clear-editor    Clear the stored path to your idea editor
 --clear-repo      Clear the stored path to your idea repo
 -v, --view        View your ideas using less
