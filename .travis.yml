@@ -1,9 +1,6 @@
 language: rust
 
-rust:
-  - stable
-  - beta
-  - nightly
+rust: stable
 
 before_script:
   - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu # Install cargo-fmt
@@ -15,11 +12,6 @@ cache:
 env:
   global:
   - RUSTFLAGS="-C link-dead-code"
-
-matrix:
-  allow_failures:
-    - rust: nightly
-  fast_finish: true
 
 notifications:
   email:
