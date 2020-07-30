@@ -38,7 +38,7 @@ The first time you run `eureka` it will ask for the path to your ideas repo.
 This configuration will be stored in `~/.eureka/`.
 
 After the setup simply run `eureka` to capture an idea. It will then be 
-committed and pushed to `origin/master`.
+committed and pushed to the `origin` remote and the branch name of your choice.
 
 View your stored ideas with the `-v` or `--view` flag.
 
@@ -49,6 +49,7 @@ $ eureka --view
 ### Flags
 
 ```sh
+--clear-branch    Clear the stored branch name
 --clear-repo    Clear the stored path to your idea repo
 -v, --view      View ideas with your $PAGER env variable. If unset use less
 ```
