@@ -10,7 +10,7 @@ use std::{env, io};
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use printer::{Print, Printer};
 use reader::{Read, Reader};
-use types::ConfigFile::Repo;
+use types::ConfigFile::{Branch, Repo};
 use utils::get_if_available;
 
 pub mod types;
@@ -42,24 +42,27 @@ where
 
     pub fn run(&mut self) {
         if self.is_config_missing() {
-            if self.is_first_time_run() {
-                // If config dir is missing - create it
-                if !self.fh.config_dir_exists() {
-                    self.fh.config_dir_create().unwrap();
-                }
-
-                self.printer.print_fts_banner();
+            // If config dir is missing - create it
+            if !self.fh.config_dir_exists() {
+                self.fh.config_dir_create().unwrap();
             }
+
+            self.printer.print_fts_banner();
 
             // If repo path is missing - ask for it
             if self.fh.config_read(Repo).is_err() {
                 self.setup_repo_path().unwrap();
             }
 
+            // If branch name is missing - ask for it
+            if self.fh.config_read(Branch).is_err() {
+                self.setup_branch_name().unwrap();
+            }
+
             self.printer
                 .print("First time setup complete. Happy ideation!");
         } else {
-            self.input_idea();
+            self.ask_for_idea();
         }
     }
 
@@ -68,6 +71,14 @@ where
             self.fh
                 .file_rm(Repo)
                 .expect("Could not remove repo config file");
+        }
+    }
+
+    pub fn clear_branch(&self) {
+        if self.fh.config_read(Branch).is_ok() {
+            self.fh
+                .file_rm(Branch)
+                .expect("Could not remove branch name config file");
         }
     }
 
@@ -91,15 +102,25 @@ where
         self.fh.config_write(Repo, input_repo_path)
     }
 
-    fn is_first_time_run(&self) -> bool {
-        self.fh.config_read(Repo).is_err()
+    fn setup_branch_name(&mut self) -> io::Result<()> {
+        self.printer
+            .print_input_header("Name of branch (default: master)");
+        self.printer.flush().unwrap();
+        let mut branch_name = self.reader.read();
+
+        // Default to "master"
+        if branch_name.is_empty() {
+            branch_name = "master".to_string();
+        }
+
+        self.fh.config_write(Branch, branch_name)
     }
 
     fn is_config_missing(&self) -> bool {
-        self.fh.config_read(Repo).is_err()
+        self.fh.config_read(Repo).is_err() || self.fh.config_read(Branch).is_err()
     }
 
-    fn input_idea(&mut self) {
+    fn ask_for_idea(&mut self) {
         self.printer.print_input_header(">> Idea summary");
         let idea_summary = self.reader.read();
 

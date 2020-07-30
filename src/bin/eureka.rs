@@ -25,6 +25,11 @@ fn main() {
                 .help("Clear the stored path to your idea repo"),
         )
         .arg(
+            Arg::with_name(ClearBranch.value())
+                .long(ClearBranch.value())
+                .help("Clear the stored branch name"),
+        )
+        .arg(
             Arg::with_name(View.value())
                 .long(View.value())
                 .short(ShortView.value())
@@ -38,13 +43,18 @@ fn main() {
 
     let mut eureka = Eureka::new(output, input);
 
-    if cli_flags.is_present(ClearRepo.value()) {
-        eureka.clear_repo();
-        exit_w_code(0);
-    }
+    let clear_repo = cli_flags.is_present(ClearRepo.value());
+    let clear_branch = cli_flags.is_present(ClearBranch.value());
 
-    if cli_flags.is_present(View.value()) {
-        eureka.open_idea_file();
+    if clear_repo || clear_branch {
+        if clear_repo {
+            eureka.clear_repo();
+        }
+
+        if clear_branch {
+            eureka.clear_branch();
+        }
+
         exit_w_code(0);
     }
 
