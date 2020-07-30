@@ -1,5 +1,3 @@
-extern crate which;
-
 use std::process;
 
 pub fn get_if_available(program: &str) -> Option<String> {
