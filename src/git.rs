@@ -1,6 +1,7 @@
+use crate::utils;
+
 use std::io::Result;
 use std::process::Command;
-use utils;
 
 pub fn commit_and_push(repo_path: &str, subject: String) -> Result<()> {
     add(repo_path)

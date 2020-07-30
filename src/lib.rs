@@ -1,3 +1,4 @@
+extern crate dirs;
 extern crate termcolor;
 
 use termcolor::WriteColor;
@@ -12,12 +13,13 @@ use reader::{Read, Reader};
 use types::ConfigFile::Repo;
 use utils::get_if_available;
 
-pub mod file_handler;
-mod git;
-pub mod printer;
-pub mod reader;
 pub mod types;
 pub mod utils;
+
+mod file_handler;
+mod git;
+mod printer;
+mod reader;
 
 pub struct Eureka<W, R> {
     pub fh: FileHandler,
@@ -30,6 +32,14 @@ where
     W: Write + WriteColor,
     R: BufRead,
 {
+    pub fn new(writer: W, reader: R) -> Self {
+        Eureka {
+            fh: FileHandler {},
+            printer: Printer { writer },
+            reader: Reader { reader },
+        }
+    }
+
     pub fn run(&mut self) {
         if self.is_config_missing() {
             if self.is_first_time_run() {

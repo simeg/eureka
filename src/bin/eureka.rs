@@ -10,9 +10,6 @@ use std::io;
 use clap::{App, Arg, ArgMatches};
 use termcolor::{ColorChoice, StandardStream};
 
-use eureka::file_handler::FileHandler;
-use eureka::printer::Printer;
-use eureka::reader::Reader;
 use eureka::types::CliFlag::*;
 use eureka::utils::exit_w_code;
 use eureka::Eureka;
@@ -39,11 +36,7 @@ fn main() {
     let input = stdio.lock();
     let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
 
-    let mut eureka = Eureka {
-        fh: FileHandler {},
-        reader: Reader { reader: input },
-        printer: Printer { writer: output },
-    };
+    let mut eureka = Eureka::new(output, input);
 
     if cli_flags.is_present(ClearRepo.value()) {
         eureka.clear_repo();

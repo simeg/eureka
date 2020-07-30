@@ -1,20 +1,26 @@
-extern crate dirs;
+use crate::dirs::home_dir;
+use crate::types::ConfigFile;
 
-use self::dirs::home_dir;
 use std::io::{ErrorKind, Read, Write};
 use std::{fs, io, path};
-use types::ConfigFile;
-
-pub struct FileHandler;
 
 pub trait FileManagement {
-    fn create_dir(&self, path: &str) -> io::Result<()>;
+    fn dir_create(&self, path: &str) -> io::Result<()>;
     fn file_exists(&self, path: &str) -> bool;
     fn file_rm(&self, file: ConfigFile) -> io::Result<()>;
 }
 
+pub trait ConfigManagement {
+    fn config_dir_create(&self) -> io::Result<String>;
+    fn config_dir_exists(&self) -> bool;
+    fn config_read(&self, file: ConfigFile) -> io::Result<String>;
+    fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()>;
+}
+
+pub struct FileHandler;
+
 impl FileManagement for FileHandler {
-    fn create_dir(&self, path: &str) -> io::Result<()> {
+    fn dir_create(&self, path: &str) -> io::Result<()> {
         fs::create_dir_all(&path)
     }
 
@@ -23,7 +29,7 @@ impl FileManagement for FileHandler {
     }
 
     fn file_rm(&self, config: ConfigFile) -> io::Result<()> {
-        let config_path = config_path_for(config);
+        let config_path = self.config_path_for(config);
 
         if !self.file_exists(&config_path) {
             return Err(io::Error::new(
@@ -37,25 +43,18 @@ impl FileManagement for FileHandler {
     }
 }
 
-pub trait ConfigManagement {
-    fn config_dir_create(&self) -> io::Result<String>;
-    fn config_dir_exists(&self) -> bool;
-    fn config_read(&self, file: ConfigFile) -> io::Result<String>;
-    fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()>;
-}
-
 impl ConfigManagement for FileHandler {
     fn config_dir_create(&self) -> io::Result<String> {
-        fs::create_dir_all(config_dir_path()).expect("Cannot create directory");
-        Ok(config_dir_path())
+        fs::create_dir_all(self.config_dir_path()).expect("Cannot create directory");
+        Ok(self.config_dir_path())
     }
 
     fn config_dir_exists(&self) -> bool {
-        self.file_exists(&config_dir_path())
+        self.file_exists(&self.config_dir_path())
     }
 
     fn config_read(&self, config: ConfigFile) -> io::Result<String> {
-        let config_path = config_path_for(config);
+        let config_path = self.config_path_for(config);
         if !self.file_exists(&config_path) {
             return Err(io::Error::new(
                 ErrorKind::NotFound,
@@ -83,7 +82,7 @@ impl ConfigManagement for FileHandler {
     }
 
     fn config_write(&self, config: ConfigFile, value: String) -> io::Result<()> {
-        let config_path = &config_path_for(config);
+        let config_path = &self.config_path_for(config);
         let path = path::Path::new(config_path);
 
         // Create file if it doesn't exist
@@ -99,25 +98,27 @@ impl ConfigManagement for FileHandler {
     }
 }
 
-fn config_path_for(config_type: ConfigFile) -> String {
-    let file_name = match config_type {
-        ConfigFile::Repo => ConfigFile::Repo.value(),
-    };
+impl FileHandler {
+    fn config_path_for(&self, config_type: ConfigFile) -> String {
+        let file_name = match config_type {
+            ConfigFile::Repo => ConfigFile::Repo.value(),
+        };
 
-    match home_dir() {
-        Some(location) => format!(
-            "{home}/{eureka}/{file_name}",
-            home = location.display(),
-            eureka = ".eureka",
-            file_name = file_name
-        ),
-        None => panic!("Could not resolve your $HOME directory"),
+        match home_dir() {
+            Some(location) => format!(
+                "{home}/{eureka}/{file_name}",
+                home = location.display(),
+                eureka = ".eureka",
+                file_name = file_name
+            ),
+            None => panic!("Could not resolve your $HOME directory"),
+        }
     }
-}
 
-fn config_dir_path() -> String {
-    match home_dir() {
-        Some(home_dir) => format!("{}/{}", home_dir.display(), ".eureka"),
-        None => panic!("Could not resolve your $HOME directory"),
+    fn config_dir_path(&self) -> String {
+        match home_dir() {
+            Some(home_dir) => format!("{}/{}", home_dir.display(), ".eureka"),
+            None => panic!("Could not resolve your $HOME directory"),
+        }
     }
 }

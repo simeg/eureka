@@ -1,8 +1,15 @@
-extern crate termcolor;
+use crate::termcolor::{Color, ColorSpec};
 
 use std::io;
 
-use self::termcolor::{Color, ColorSpec};
+pub trait Print {
+    fn print(&mut self, value: &str);
+    fn println(&mut self, value: &str, opts: PrintOptions);
+    fn print_input_header(&mut self, value: &str);
+    fn print_editor_selection_header(&mut self);
+    fn print_fts_banner(&mut self);
+    fn flush(&mut self) -> io::Result<()>;
+}
 
 pub struct Printer<W> {
     pub writer: W,
@@ -12,15 +19,6 @@ pub struct Printer<W> {
 pub struct PrintOptions {
     color: Color,
     is_bold: bool,
-}
-
-pub trait Print {
-    fn print(&mut self, value: &str);
-    fn println(&mut self, value: &str, opts: PrintOptions);
-    fn print_input_header(&mut self, value: &str);
-    fn print_editor_selection_header(&mut self);
-    fn print_fts_banner(&mut self);
-    fn flush(&mut self) -> io::Result<()>;
 }
 
 impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
