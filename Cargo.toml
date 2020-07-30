@@ -10,6 +10,7 @@ homepage = "https://github.com/simeg/eureka"
 repository = "https://github.com/simeg/eureka"
 readme = "README.md"
 license = "MIT"
+edition = "2018"
 exclude = [
     "assets/*",
 ]
