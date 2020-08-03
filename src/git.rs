@@ -1,75 +1,75 @@
-use crate::utils;
+use git2::{Commit, Cred, Direction, ObjectType, Oid, PushOptions, RemoteCallbacks, Repository};
 
-use std::io::Result;
-use std::process::Command;
+use std::path::Path;
 
-pub fn commit_and_push(repo_path: &str, subject: String) -> Result<()> {
-    add(repo_path)
-        .and(commit(repo_path, subject))
-        .and(push(repo_path))
+pub struct Git {
+    repo: Repository,
 }
 
-fn add(repo_path: &str) -> Result<()> {
-    match Command::new(git())
-        .args(default_args(repo_path).iter())
-        .arg("add")
-        .arg("./README.md")
-        .status()
-    {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            eprintln!("Could not stage files to repo at [{}]: {}", repo_path, e);
-            Err(e)
-        }
+impl Git {
+    const IDEA_FILE_NAME: &'static str = "README.md";
+
+    pub fn new(repo_path: String) -> Self {
+        let repo = Repository::open(&Path::new(&repo_path))
+            .unwrap_or_else(|_| panic!("Could not locate repo at: {}", repo_path));
+        Self { repo }
     }
-}
 
-fn commit(repo_path: &str, subject: String) -> Result<()> {
-    match Command::new(git())
-        .args(default_args(repo_path).iter())
-        .arg("commit")
-        .arg("-m")
-        .arg(subject)
-        .status()
-    {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            eprintln!(
-                "Could not commit new idea to repo at [{}]: {}",
-                repo_path, e
-            );
-            Err(e)
-        }
+    pub fn add(&self) -> Result<(), git2::Error> {
+        let mut index = self.repo.index()?;
+
+        index.add_path(Path::new(Git::IDEA_FILE_NAME))?;
+        index.write()
     }
-}
 
-fn push(repo_path: &str) -> Result<()> {
-    match Command::new(git())
-        .args(default_args(repo_path).iter())
-        .arg("push")
-        .arg("origin")
-        .arg("master")
-        .status()
-    {
-        Ok(_) => Ok(()),
-        Err(e) => {
-            eprintln!(
-                "Could not push commit to remote 'origin' and \
-                     branch 'master' in repo at [{}]: {}",
-                repo_path, e
-            );
-            Err(e)
-        }
+    pub fn commit(&self, subject: String) -> Result<Oid, git2::Error> {
+        let mut index = self.repo.index()?;
+
+        let signature = self.repo.signature()?; // Use default user.name and user.email
+
+        let oid = index.write_tree()?;
+        let parent_commit = self.find_last_commit()?;
+        let tree = self.repo.find_tree(oid)?;
+
+        self.repo.commit(
+            Some("HEAD"),      // point HEAD to our new commit
+            &signature,        // author
+            &signature,        // committer
+            &subject,          // commit message
+            &tree,             // tree
+            &[&parent_commit], // parent commit
+        )
     }
-}
 
-fn git() -> String {
-    utils::get_if_available("git").expect("Cannot locate executable - git - on your system")
-}
+    pub fn push(&self) -> Result<(), git2::Error> {
+        let mut remote = self.repo.find_remote("origin").unwrap();
 
-fn default_args(repo_path: &str) -> [String; 2] {
-    [
-        format!("--git-dir={}/.git/", repo_path),
-        format!("--work-tree={}", repo_path),
-    ]
+        remote.connect_auth(Direction::Push, Some(self.get_callbacks()), None)?;
+
+        let branch_name = "master";
+
+        let mut options = PushOptions::default();
+        options.remote_callbacks(self.get_callbacks());
+        remote.push(
+            &[format!(
+                "refs/heads/{}:refs/heads/{}",
+                branch_name, branch_name
+            )],
+            Some(&mut options),
+        )
+    }
+
+    fn find_last_commit(&self) -> Result<Commit, git2::Error> {
+        let obj = self.repo.head()?.resolve()?.peel(ObjectType::Commit)?;
+        obj.into_commit()
+            .map_err(|_| git2::Error::from_str("Couldn't find commit"))
+    }
+
+    fn get_callbacks<'a>(&self) -> RemoteCallbacks<'a> {
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(|_url, username, _allowed_types| {
+            Cred::ssh_key_from_agent(username.unwrap())
+        });
+        callbacks
+    }
 }
