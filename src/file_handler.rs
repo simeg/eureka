@@ -5,8 +5,6 @@ use std::io::{ErrorKind, Read, Write};
 use std::{fs, io, path};
 
 pub trait FileManagement {
-    fn dir_create(&self, path: &str) -> io::Result<()>;
-    fn file_exists(&self, path: &str) -> bool;
     fn file_rm(&self, file: ConfigFile) -> io::Result<()>;
 }
 
@@ -26,18 +24,10 @@ impl Default for FileHandler {
 }
 
 impl FileManagement for FileHandler {
-    fn dir_create(&self, path: &str) -> io::Result<()> {
-        fs::create_dir_all(&path)
-    }
-
-    fn file_exists(&self, path: &str) -> bool {
-        fs::metadata(path).is_ok()
-    }
-
     fn file_rm(&self, config: ConfigFile) -> io::Result<()> {
         let config_path = self.config_path_for(config);
 
-        if !self.file_exists(&config_path) {
+        if fs::metadata(&config_path).is_err() {
             return Err(io::Error::new(
                 ErrorKind::NotFound,
                 format!("Path does not exist: {}", config_path),
@@ -51,17 +41,19 @@ impl FileManagement for FileHandler {
 
 impl ConfigManagement for FileHandler {
     fn config_dir_create(&self) -> io::Result<String> {
-        fs::create_dir_all(self.config_dir_path()).expect("Cannot create directory");
-        Ok(self.config_dir_path())
+        let dir_path = self.config_dir_path();
+        fs::create_dir_all(&dir_path)
+            .unwrap_or_else(|_| panic!("Cannot create directory: {}", &dir_path));
+        Ok(dir_path)
     }
 
     fn config_dir_exists(&self) -> bool {
-        self.file_exists(&self.config_dir_path())
+        fs::metadata(&self.config_dir_path()).is_ok()
     }
 
     fn config_read(&self, config: ConfigFile) -> io::Result<String> {
         let config_path = self.config_path_for(config);
-        if !self.file_exists(&config_path) {
+        if fs::metadata(&config_path).is_err() {
             return Err(io::Error::new(
                 ErrorKind::NotFound,
                 format!("File does not exist: {}", &config_path),
@@ -123,9 +115,7 @@ impl FileHandler {
     }
 
     fn config_dir_path(&self) -> String {
-        match home_dir() {
-            Some(home_dir) => format!("{}/{}", home_dir.display(), ".eureka"),
-            None => panic!("Could not resolve your $HOME directory"),
-        }
+        let home = home_dir().expect("Could not resolve your $HOME directory");
+        format!("{}/{}", home.display(), ".eureka")
     }
 }
