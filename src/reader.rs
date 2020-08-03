@@ -5,7 +5,13 @@ pub trait Read {
 }
 
 pub struct Reader<R> {
-    pub reader: R,
+    reader: R,
+}
+
+impl<R> Reader<R> {
+    pub fn new(reader: R) -> Self {
+        Self { reader }
+    }
 }
 
 impl<R: io::BufRead> Read for Reader<R> {

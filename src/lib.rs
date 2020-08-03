@@ -24,9 +24,10 @@ mod printer;
 mod reader;
 
 pub struct Eureka<W, R> {
-    pub fh: FileHandler,
-    pub printer: Printer<W>,
-    pub reader: Reader<R>,
+    fh: FileHandler,
+    printer: Printer<W>,
+    reader: Reader<R>,
+    git: Option<Git>,
 }
 
 impl<W, R> Eureka<W, R>
@@ -36,9 +37,10 @@ where
 {
     pub fn new(writer: W, reader: R) -> Self {
         Eureka {
-            fh: FileHandler {},
-            printer: Printer { writer },
-            reader: Reader { reader },
+            fh: FileHandler::default(),
+            printer: Printer::new(writer),
+            reader: Reader::new(reader),
+            git: None,
         }
     }
 
@@ -49,7 +51,7 @@ where
                 self.fh.config_dir_create().unwrap();
             }
 
-            self.printer.print_fts_banner();
+            self.printer.fts_banner();
 
             // If repo path is missing - ask for it
             if self.fh.config_read(Repo).is_err() {
@@ -91,13 +93,35 @@ where
         }
     }
 
+    fn init_git(&mut self) {
+        let repo_path = self
+            .fh
+            .config_read(Repo)
+            .unwrap_or_else(|_| panic!("Repo config is missing (should never end up here"));
+        self.git = Some(Git::new(repo_path));
+    }
+
+    fn git_add_commit_push(&mut self, commit_subject: String) {
+        let git = self.git.as_ref().unwrap();
+
+        self.printer
+            .println("Adding and committing your new idea..");
+        git.add()
+            .and_then(|_| git.commit(commit_subject))
+            .unwrap_or_else(|e| panic!("Something went wrong adding or committing: {}", e));
+        self.printer.println("Added and committed!");
+
+        self.printer.println("Pushing your new idea..");
+        git.push()
+            .unwrap_or_else(|e| panic!("Something went wrong pushing your idea: {}", e));
+        self.printer.println("Pushed!");
+    }
+
     fn setup_repo_path(&mut self) -> io::Result<()> {
         let mut input_repo_path = String::new();
 
         while input_repo_path.is_empty() {
-            self.printer
-                .print_input_header("Absolute path to your idea repo");
-            self.printer.flush().unwrap();
+            self.printer.input_header("Absolute path to your idea repo");
             input_repo_path = self.reader.read();
         }
 
@@ -106,8 +130,7 @@ where
 
     fn setup_branch_name(&mut self) -> io::Result<()> {
         self.printer
-            .print_input_header("Name of branch (default: master)");
-        self.printer.flush().unwrap();
+            .input_header("Name of branch (default: master)");
         let mut branch_name = self.reader.read();
 
         // Default to "master"
@@ -123,14 +146,17 @@ where
     }
 
     fn ask_for_idea(&mut self) {
-        self.printer.print_input_header(">> Idea summary");
+        // TODO: Ask again if empty input
+        self.printer.input_header(">> Idea summary");
         let idea_summary = self.reader.read();
 
         let repo_path = self.fh.config_read(Repo).unwrap();
         let readme_path = format!("{}/README.md", repo_path);
 
+        self.init_git();
+
         match self.open_editor(&readme_path) {
-            Ok(_) => git::commit_and_push(&repo_path, idea_summary).unwrap(),
+            Ok(_) => self.git_add_commit_push(idea_summary),
             Err(e) => panic!(e),
         };
     }

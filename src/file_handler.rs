@@ -19,6 +19,12 @@ pub trait ConfigManagement {
 
 pub struct FileHandler;
 
+impl Default for FileHandler {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
 impl FileManagement for FileHandler {
     fn dir_create(&self, path: &str) -> io::Result<()> {
         fs::create_dir_all(&path)
