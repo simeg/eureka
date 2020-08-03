@@ -1,18 +1,14 @@
 use crate::termcolor::{Color, ColorSpec};
 
-use std::io;
+use std::io::Write;
 
 pub trait Print {
     fn print(&mut self, value: &str);
-    fn println(&mut self, value: &str, opts: PrintOptions);
-    fn print_input_header(&mut self, value: &str);
-    fn print_editor_selection_header(&mut self);
-    fn print_fts_banner(&mut self);
-    fn flush(&mut self) -> io::Result<()>;
+    fn println(&mut self, value: &str);
 }
 
 pub struct Printer<W> {
-    pub writer: W,
+    writer: W,
 }
 
 #[derive(Clone, Copy)]
@@ -21,42 +17,22 @@ pub struct PrintOptions {
     is_bold: bool,
 }
 
-impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
-    fn print(&mut self, value: &str) {
-        write!(self.writer, "{}", value).expect("Could not write to stdout");
-        self.flush().unwrap()
+impl<W: Write + termcolor::WriteColor> Printer<W> {
+    pub fn new(writer: W) -> Self {
+        Self { writer }
     }
 
-    fn println(&mut self, value: &str, opts: PrintOptions) {
-        let mut color_spec = ColorSpec::new();
-        color_spec.set_fg(Some(opts.color)).set_bold(opts.is_bold);
-        self.writer
-            .set_color(&color_spec)
-            .expect("Could not set color for stdout");
-        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
-        self.writer.reset().expect("Could not reset stdout");
-    }
-
-    fn print_input_header(&mut self, value: &str) {
+    pub fn input_header(&mut self, value: &str) {
         let opts = PrintOptions {
             color: Color::Green,
             is_bold: true,
         };
-        self.println(value, opts);
+        self.println_styled(value, opts);
         self.print("> ");
+        self.writer.flush().expect("Could not flush");
     }
 
-    fn print_editor_selection_header(&mut self) {
-        let opts = PrintOptions {
-            color: Color::Green,
-            is_bold: true,
-        };
-        let text = "What editor do you want to use for writing down your ideas?";
-        self.println(text, opts);
-        self.flush().unwrap()
-    }
-
-    fn print_fts_banner(&mut self) {
+    pub fn fts_banner(&mut self) {
         let opts = PrintOptions {
             color: Color::Yellow,
             is_bold: false,
@@ -91,11 +67,27 @@ impl<W: io::Write + termcolor::WriteColor> Print for Printer<W> {
             row7,
         ];
         for row in &rows {
-            self.println(row, opts);
+            self.println_styled(row, opts);
         }
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.writer.flush()
+    fn println_styled(&mut self, value: &str, opts: PrintOptions) {
+        let mut color_spec = ColorSpec::new();
+        color_spec.set_fg(Some(opts.color)).set_bold(opts.is_bold);
+        self.writer
+            .set_color(&color_spec)
+            .expect("Could not set color for stdout");
+        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
+        self.writer.reset().expect("Could not reset stdout");
+    }
+}
+
+impl<W: Write> Print for Printer<W> {
+    fn print(&mut self, value: &str) {
+        write!(self.writer, "{}", value).expect("Could not write to stdout");
+    }
+
+    fn println(&mut self, value: &str) {
+        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
     }
 }
