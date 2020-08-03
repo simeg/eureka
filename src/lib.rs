@@ -108,12 +108,11 @@ where
             .println("Adding and committing your new idea..");
         git.add()
             .and_then(|_| git.commit(commit_subject))
-            .unwrap_or_else(|e| panic!("Something went wrong adding or committing: {}", e));
+            .expect("Something went wrong adding or committing");
         self.printer.println("Added and committed!");
 
         self.printer.println("Pushing your new idea..");
-        git.push()
-            .unwrap_or_else(|e| panic!("Something went wrong pushing your idea: {}", e));
+        git.push().expect("Something went wrong pushing");
         self.printer.println("Pushed!");
     }
 

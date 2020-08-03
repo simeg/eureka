@@ -47,28 +47,15 @@ impl<W: Write + termcolor::WriteColor> Printer<W> {
             "#".repeat(4),
             "#".repeat(60)
         );
-        let row0 = "";
-        let row1 = "This tool requires you to have a repository with a README.md";
-        let row2 = "in the root folder. The markdown file is where your ideas";
-        let row3 = "will be stored. ";
-        let row4 = "";
-        let row5 = "Once first time setup has completed, simply run Eureka again";
-        let row6 = "to begin writing down ideas.";
-        let row7 = "";
-        let rows = [
-            banner.as_str(),
-            row0,
-            row1,
-            row2,
-            row3,
-            row4,
-            row5,
-            row6,
-            row7,
-        ];
-        for row in &rows {
-            self.println_styled(row, opts);
-        }
+        let description = r#"
+This tool requires you to have a repository with a README.md
+in the root folder. The markdown file is where your ideas
+will be stored.
+
+Once first time setup has completed, simply run Eureka again
+to begin writing down ideas.
+        "#;
+        self.println_styled(&format!("{}\n{}", banner.as_str(), description), opts);
     }
 
     fn println_styled(&mut self, value: &str, opts: PrintOptions) {
