@@ -91,3 +91,23 @@ impl<W: Write> Print for Printer<W> {
         writeln!(self.writer, "{}", value).expect("Could not write to stdout");
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::printer::{Print, Printer};
+
+    #[test]
+    fn test_printer_works() {
+        let mut output = Vec::new();
+        let mut printer = Printer {
+            writer: &mut output,
+        };
+
+        printer.print("this value");
+
+        let actual = String::from_utf8(output).expect("Not UTF-8");
+        let expected = "this value";
+
+        assert_eq!(actual, expected);
+    }
+}
