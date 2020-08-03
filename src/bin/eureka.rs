@@ -58,5 +58,10 @@ fn main() {
         exit_w_code(0);
     }
 
+    if cli_flags.is_present(View.value()) {
+        eureka.open_idea_file();
+        exit_w_code(0);
+    }
+
     eureka.run()
 }
