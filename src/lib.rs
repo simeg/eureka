@@ -1,4 +1,5 @@
 extern crate dirs;
+extern crate git2;
 extern crate termcolor;
 
 use termcolor::WriteColor;
@@ -8,6 +9,7 @@ use std::process::Command;
 use std::{env, io};
 
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
+use git::Git;
 use printer::{Print, Printer};
 use reader::{Read, Reader};
 use types::ConfigFile::{Branch, Repo};
