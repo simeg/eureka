@@ -2,15 +2,12 @@ extern crate dirs;
 extern crate git2;
 extern crate termcolor;
 
-use termcolor::WriteColor;
-
-use std::io::Write;
 use std::process::Command;
 use std::{env, io};
 
-use file_handler::{ConfigManagement, FileHandler, FileManagement};
+use file_handler::{ConfigManagement, FileManagement};
 use git::Git;
-use printer::{Print, Printer};
+use printer::{Print, PrintColor};
 use reader::ReadInput;
 use types::ConfigFile::{Branch, Repo};
 use utils::get_if_available;
@@ -18,27 +15,28 @@ use utils::get_if_available;
 pub mod types;
 pub mod utils;
 
-mod file_handler;
+pub mod file_handler;
 mod git;
 pub mod printer;
 pub mod reader;
 
-pub struct Eureka<W, R: ReadInput> {
-    fh: FileHandler,
-    printer: Printer<W>,
+pub struct Eureka<FH: ConfigManagement + FileManagement, W: Print + PrintColor, R: ReadInput> {
+    fh: FH,
+    printer: W,
     reader: R,
     git: Option<Git>,
 }
 
-impl<W, R> Eureka<W, R>
+impl<FH, W, R> Eureka<FH, W, R>
 where
-    W: Write + WriteColor,
+    FH: ConfigManagement + FileManagement,
+    W: Print + PrintColor,
     R: ReadInput,
 {
-    pub fn new(writer: W, reader: R) -> Self {
+    pub fn new(fh: FH, printer: W, reader: R) -> Self {
         Eureka {
-            fh: FileHandler::default(),
-            printer: Printer::new(writer),
+            fh,
+            printer,
             reader,
             git: None,
         }
