@@ -7,6 +7,7 @@ use std::io;
 use clap::{App, Arg, ArgMatches};
 use termcolor::{ColorChoice, StandardStream};
 
+use eureka::reader::Reader;
 use eureka::types::CliFlag::*;
 use eureka::utils::exit_w_code;
 use eureka::Eureka;
@@ -38,7 +39,7 @@ fn main() {
     let input = stdio.lock();
     let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
 
-    let mut eureka = Eureka::new(output, input);
+    let mut eureka = Eureka::new(output, Reader::new(input));
 
     let clear_repo = cli_flags.is_present(ClearRepo.value());
     let clear_branch = cli_flags.is_present(ClearBranch.value());

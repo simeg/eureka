@@ -4,14 +4,14 @@ extern crate termcolor;
 
 use termcolor::WriteColor;
 
-use std::io::{BufRead, Write};
+use std::io::Write;
 use std::process::Command;
 use std::{env, io};
 
 use file_handler::{ConfigManagement, FileHandler, FileManagement};
 use git::Git;
 use printer::{Print, Printer};
-use reader::{Read, Reader};
+use reader::ReadInput;
 use types::ConfigFile::{Branch, Repo};
 use utils::get_if_available;
 
@@ -20,26 +20,26 @@ pub mod utils;
 
 mod file_handler;
 mod git;
-mod printer;
-mod reader;
+pub mod printer;
+pub mod reader;
 
-pub struct Eureka<W, R> {
+pub struct Eureka<W, R: ReadInput> {
     fh: FileHandler,
     printer: Printer<W>,
-    reader: Reader<R>,
+    reader: R,
     git: Option<Git>,
 }
 
 impl<W, R> Eureka<W, R>
 where
     W: Write + WriteColor,
-    R: BufRead,
+    R: ReadInput,
 {
     pub fn new(writer: W, reader: R) -> Self {
         Eureka {
             fh: FileHandler::default(),
             printer: Printer::new(writer),
-            reader: Reader::new(reader),
+            reader,
             git: None,
         }
     }
@@ -121,7 +121,7 @@ where
 
         while input_repo_path.is_empty() {
             self.printer.input_header("Absolute path to your idea repo");
-            input_repo_path = self.reader.read();
+            input_repo_path = self.reader.read_input();
         }
 
         self.fh.config_write(Repo, input_repo_path)
@@ -130,7 +130,7 @@ where
     fn setup_branch_name(&mut self) -> io::Result<()> {
         self.printer
             .input_header("Name of branch (default: master)");
-        let mut branch_name = self.reader.read();
+        let mut branch_name = self.reader.read_input();
 
         // Default to "master"
         if branch_name.is_empty() {
@@ -147,7 +147,7 @@ where
     fn ask_for_idea(&mut self) {
         // TODO: Ask again if empty input
         self.printer.input_header(">> Idea summary");
-        let idea_summary = self.reader.read();
+        let idea_summary = self.reader.read_input();
 
         let repo_path = self.fh.config_read(Repo).unwrap();
         let readme_path = format!("{}/README.md", repo_path);
