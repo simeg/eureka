@@ -7,6 +7,12 @@ pub trait Print {
     fn println(&mut self, value: &str);
 }
 
+pub trait PrintColor {
+    fn fts_banner(&mut self);
+    fn input_header(&mut self, value: &str);
+    fn println_styled(&mut self, value: &str, opts: PrintOptions);
+}
+
 pub struct Printer<W> {
     writer: W,
 }
@@ -21,18 +27,20 @@ impl<W: Write + termcolor::WriteColor> Printer<W> {
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
+}
 
-    pub fn input_header(&mut self, value: &str) {
-        let opts = PrintOptions {
-            color: Color::Green,
-            is_bold: true,
-        };
-        self.println_styled(value, opts);
-        self.print("> ");
-        self.writer.flush().expect("Could not flush");
+impl<W: Write> Print for Printer<W> {
+    fn print(&mut self, value: &str) {
+        write!(self.writer, "{}", value).expect("Could not write to stdout");
     }
 
-    pub fn fts_banner(&mut self) {
+    fn println(&mut self, value: &str) {
+        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
+    }
+}
+
+impl<W: Write + termcolor::WriteColor> PrintColor for Printer<W> {
+    fn fts_banner(&mut self) {
         let opts = PrintOptions {
             color: Color::Yellow,
             is_bold: false,
@@ -58,6 +66,16 @@ to begin writing down ideas.
         self.println_styled(&format!("{}\n{}", banner.as_str(), description), opts);
     }
 
+    fn input_header(&mut self, value: &str) {
+        let opts = PrintOptions {
+            color: Color::Green,
+            is_bold: true,
+        };
+        self.println_styled(value, opts);
+        self.print("> ");
+        self.writer.flush().expect("Could not flush");
+    }
+
     fn println_styled(&mut self, value: &str, opts: PrintOptions) {
         let mut color_spec = ColorSpec::new();
         color_spec.set_fg(Some(opts.color)).set_bold(opts.is_bold);
@@ -66,16 +84,6 @@ to begin writing down ideas.
             .expect("Could not set color for stdout");
         writeln!(self.writer, "{}", value).expect("Could not write to stdout");
         self.writer.reset().expect("Could not reset stdout");
-    }
-}
-
-impl<W: Write> Print for Printer<W> {
-    fn print(&mut self, value: &str) {
-        write!(self.writer, "{}", value).expect("Could not write to stdout");
-    }
-
-    fn println(&mut self, value: &str) {
-        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
     }
 }
 
