@@ -12,7 +12,7 @@ use eureka::printer::Printer;
 use eureka::reader::Reader;
 use eureka::types::CliFlag::*;
 use eureka::utils::exit_w_code;
-use eureka::Eureka;
+use eureka::{Eureka, EurekaOptions};
 
 fn main() {
     let cli_flags: ArgMatches = App::new("eureka")
@@ -47,25 +47,16 @@ fn main() {
         Reader::new(input),
     );
 
-    let clear_repo = cli_flags.is_present(ClearRepo.value());
-    let clear_branch = cli_flags.is_present(ClearBranch.value());
+    let opts = EurekaOptions {
+        clear_repo: cli_flags.is_present(ClearRepo.value()),
+        clear_branch: cli_flags.is_present(ClearBranch.value()),
+        view: cli_flags.is_present(View.value()),
+    };
 
-    if clear_repo || clear_branch {
-        if clear_repo {
-            eureka.clear_repo();
-        }
+    let status_code = match eureka.run(opts) {
+        Ok(_) => 0,
+        Err(_) => 1,
+    };
 
-        if clear_branch {
-            eureka.clear_branch();
-        }
-
-        exit_w_code(0);
-    }
-
-    if cli_flags.is_present(View.value()) {
-        eureka.open_idea_file();
-        exit_w_code(0);
-    }
-
-    eureka.run()
+    exit_w_code(status_code)
 }
