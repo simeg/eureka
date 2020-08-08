@@ -5,6 +5,7 @@ pub enum CliFlag {
     View,
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum ConfigFile {
     Branch,
     Repo,

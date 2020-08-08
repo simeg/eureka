@@ -1,3 +1,5 @@
+#[cfg(test)]
+extern crate atomic_counter;
 extern crate dirs;
 extern crate git2;
 extern crate termcolor;
