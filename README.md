@@ -33,6 +33,8 @@ $ brew install eureka
 $ cargo install eureka
 ```
 
+_Rust stable version will always be supported_
+
 ## Usage
 The first time you run `eureka` it will ask for the path to your ideas repo.
 This configuration will be stored in `~/.eureka/`.
