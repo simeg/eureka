@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.8.0
+* Use git2-rs crate for running git commands
+* Output to stdout is changed (because of that ^)
+
 ## Version 1.7.0
 * Use $EDITOR to edit ideas, fall back to vi
 * Use $PAGER to view ideas, fall back to less
