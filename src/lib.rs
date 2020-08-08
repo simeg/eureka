@@ -27,6 +27,12 @@ pub struct Eureka<FH: ConfigManagement + FileManagement, W: Print + PrintColor, 
     git: Option<Git>,
 }
 
+pub struct EurekaOptions {
+    pub clear_repo: bool,
+    pub clear_branch: bool,
+    pub view: bool,
+}
+
 impl<FH, W, R> Eureka<FH, W, R>
 where
     FH: ConfigManagement + FileManagement,
@@ -42,23 +48,39 @@ where
         }
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self, opts: EurekaOptions) -> io::Result<()> {
+        if opts.clear_repo || opts.clear_branch {
+            if opts.clear_repo {
+                self.clear_repo()?;
+            }
+
+            if opts.clear_branch {
+                self.clear_branch()?;
+            }
+
+            return Ok(());
+        }
+
+        if opts.view {
+            self.open_idea_file()?
+        }
+
         if self.is_config_missing() {
             // If config dir is missing - create it
             if !self.fh.config_dir_exists() {
-                self.fh.config_dir_create().unwrap();
+                self.fh.config_dir_create()?;
             }
 
             self.printer.fts_banner();
 
             // If repo path is missing - ask for it
             if self.fh.config_read(Repo).is_err() {
-                self.setup_repo_path().unwrap();
+                self.setup_repo_path()?;
             }
 
             // If branch name is missing - ask for it
             if self.fh.config_read(Branch).is_err() {
-                self.setup_branch_name().unwrap();
+                self.setup_branch_name()?;
             }
 
             self.printer
@@ -66,29 +88,25 @@ where
         } else {
             self.ask_for_idea();
         }
+
+        Ok(())
     }
 
-    pub fn clear_repo(&self) {
-        if self.fh.config_read(Repo).is_ok() {
-            self.fh
-                .file_rm(Repo)
-                .expect("Could not remove repo config file");
-        }
+    fn clear_repo(&self) -> io::Result<()> {
+        self.fh
+            .config_read(Repo)
+            .and_then(|_| self.fh.file_rm(Repo))
     }
 
-    pub fn clear_branch(&self) {
-        if self.fh.config_read(Branch).is_ok() {
-            self.fh
-                .file_rm(Branch)
-                .expect("Could not remove branch name config file");
-        }
+    fn clear_branch(&self) -> io::Result<()> {
+        self.fh
+            .config_read(Branch)
+            .and_then(|_| self.fh.file_rm(Branch))
     }
 
-    pub fn open_idea_file(&self) {
-        match self.fh.config_read(Repo) {
-            Ok(repo_path) => self.open_pager(repo_path).unwrap(),
-            Err(e) => panic!("No path to repository found: {}", e),
-        }
+    fn open_idea_file(&self) -> io::Result<()> {
+        let repo_path = self.fh.config_read(Repo)?;
+        self.open_pager(repo_path)
     }
 
     fn init_git(&mut self) {
