@@ -50,8 +50,8 @@ $ eureka --view
 
 ```sh
 --clear-branch    Clear the stored branch name
---clear-repo    Clear the stored path to your idea repo
--v, --view      View ideas with your $PAGER env variable. If unset use less
+--clear-repo      Clear the stored path to your idea repo
+-v, --view        View ideas with your $PAGER env variable. If unset use less
 ```
 
 ### Recommended alias
