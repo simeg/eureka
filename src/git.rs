@@ -41,12 +41,10 @@ impl Git {
         )
     }
 
-    pub fn push(&self) -> Result<(), git2::Error> {
+    pub fn push(&self, branch_name: String) -> Result<(), git2::Error> {
         let mut remote = self.repo.find_remote("origin").unwrap();
 
         remote.connect_auth(Direction::Push, Some(self.get_callbacks()), None)?;
-
-        let branch_name = "master";
 
         let mut options = PushOptions::default();
         options.remote_callbacks(self.get_callbacks());

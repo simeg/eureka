@@ -128,7 +128,9 @@ where
         self.printer.println("Added and committed!");
 
         self.printer.println("Pushing your new idea..");
-        git.push().expect("Something went wrong pushing");
+
+        let branch_name = self.fh.config_read(Branch).unwrap();
+        git.push(branch_name).expect("Something went wrong pushing");
         self.printer.println("Pushed!");
     }
 
