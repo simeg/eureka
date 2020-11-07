@@ -1,5 +1,8 @@
 # Changelog
 
+## Version 1.8.1
+* Bugfix: Commit and push to stored branch name
+
 ## Version 1.8.0
 * Use git2-rs crate for running git commands
 * Output to stdout is changed (because of that ^)
