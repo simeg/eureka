@@ -140,8 +140,13 @@ where
     fn git_add_commit_push(&mut self, commit_subject: String) -> io::Result<()> {
         self.printer
             .println("Adding and committing your new idea..");
-        self.git
-            .add()
+        let branch_name = self
+            .fh
+            .config_read(Branch)
+            .unwrap_or_else(|_| panic!("Branch config is missing (should never end up here"));
+        self.git.checkout_branch(&*branch_name)
+            .expect("Something went wrong checking out branch");
+        self.git.add()
             .and_then(|_| self.git.commit(commit_subject))
         let branch_name = self
             .fh
@@ -155,6 +160,8 @@ where
         self.printer.println("Added and committed!");
 
         self.printer.println("Pushing your new idea..");
+        self.git.push(&*branch_name)
+            .expect("Something went wrong pushing");
         self.git.push().expect("Something went wrong pushing");
         git.push(&*branch_name)
             .expect("Something went wrong pushing");
