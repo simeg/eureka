@@ -15,6 +15,25 @@ impl Git {
         Self { repo }
     }
 
+    pub fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error> {
+        let repo = &self.repo;
+
+        let commit = repo
+            .head()
+            .map(|head| head.target())
+            .and_then(|oid| repo.find_commit(oid.unwrap()))?;
+
+        // Create new branch if it doesn't exist and swallow error
+        let _branch = repo.branch(branch_name, &commit, false);
+
+        let refname = format!("refs/heads/{}", branch_name);
+        let obj = repo.revparse_single(&*refname)?;
+
+        repo.checkout_tree(&obj, None)?;
+
+        repo.set_head(&*refname)
+    }
+
     pub fn add(&self) -> Result<(), git2::Error> {
         let mut index = self.repo.index()?;
 
@@ -41,12 +60,10 @@ impl Git {
         )
     }
 
-    pub fn push(&self) -> Result<(), git2::Error> {
+    pub fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
         let mut remote = self.repo.find_remote("origin").unwrap();
 
         remote.connect_auth(Direction::Push, Some(self.get_callbacks()), None)?;
-
-        let branch_name = "master";
 
         let mut options = PushOptions::default();
         options.remote_callbacks(self.get_callbacks());
