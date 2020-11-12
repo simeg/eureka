@@ -2,16 +2,16 @@
 extern crate clap;
 extern crate termcolor;
 
-use std::io;
+use std::{io, process};
 
 use clap::{App, Arg, ArgMatches};
 use termcolor::{ColorChoice, StandardStream};
 
 use eureka::file_handler::FileHandler;
 use eureka::printer::Printer;
+use eureka::program_access::ProgramAccess;
 use eureka::reader::Reader;
 use eureka::types::CliFlag::*;
-use eureka::utils::exit_w_code;
 use eureka::{Eureka, EurekaOptions};
 
 fn main() {
@@ -45,6 +45,7 @@ fn main() {
         FileHandler::default(),
         Printer::new(output),
         Reader::new(input),
+        ProgramAccess::default(),
     );
 
     let opts = EurekaOptions {
@@ -58,5 +59,5 @@ fn main() {
         Err(_) => 1,
     };
 
-    exit_w_code(status_code)
+    process::exit(status_code)
 }
