@@ -4,29 +4,34 @@ extern crate dirs;
 extern crate git2;
 extern crate termcolor;
 
-use std::process::Command;
-use std::{env, io};
+use std::io;
 
+use crate::program_access::ProgramOpener;
 use file_handler::{ConfigManagement, FileManagement};
 use git::Git;
 use printer::{Print, PrintColor};
 use reader::ReadInput;
 use types::ConfigFile::{Branch, Repo};
-use utils::get_if_available;
 
 pub mod types;
-pub mod utils;
 
 pub mod file_handler;
 mod git;
 pub mod printer;
+pub mod program_access;
 pub mod reader;
 
-pub struct Eureka<FH: ConfigManagement + FileManagement, W: Print + PrintColor, R: ReadInput> {
+pub struct Eureka<
+    FH: ConfigManagement + FileManagement,
+    W: Print + PrintColor,
+    R: ReadInput,
+    PO: ProgramOpener,
+> {
     fh: FH,
     printer: W,
     reader: R,
     git: Option<Git>,
+    program_opener: PO,
 }
 
 pub struct EurekaOptions {
@@ -35,18 +40,20 @@ pub struct EurekaOptions {
     pub view: bool,
 }
 
-impl<FH, W, R> Eureka<FH, W, R>
+impl<FH, W, R, PO> Eureka<FH, W, R, PO>
 where
     FH: ConfigManagement + FileManagement,
     W: Print + PrintColor,
     R: ReadInput,
+    PO: ProgramOpener,
 {
-    pub fn new(fh: FH, printer: W, reader: R) -> Self {
+    pub fn new(fh: FH, printer: W, reader: R, program_opener: PO) -> Self {
         Eureka {
             fh,
             printer,
             reader,
             git: None,
+            program_opener,
         }
     }
 
@@ -108,7 +115,8 @@ where
 
     fn open_idea_file(&self) -> io::Result<()> {
         let repo_path = self.fh.config_read(Repo)?;
-        self.open_pager(repo_path)
+        self.program_opener
+            .open_pager(&format!("{}/README.md", repo_path))
     }
 
     fn init_git(&mut self) {
@@ -179,48 +187,9 @@ where
 
         self.init_git();
 
-        match self.open_editor(&readme_path) {
+        match self.program_opener.open_editor(&readme_path) {
             Ok(_) => self.git_add_commit_push(idea_summary),
             Err(e) => panic!(e),
         };
-    }
-
-    fn open_editor(&self, file_path: &str) -> io::Result<()> {
-        let editor = match env::var("EDITOR") {
-            Ok(e) => e,
-            Err(_) => {
-                get_if_available("vi").expect("Cannot locate executable - vi - on your system")
-            }
-        };
-        match Command::new(&editor).arg(file_path).status() {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                eprintln!(
-                    "Error: Unable to open file [{}] with editor binary at [{}]: {}",
-                    file_path, editor, e
-                );
-                Err(e)
-            }
-        }
-    }
-
-    fn open_pager(&self, repo_config_file: String) -> io::Result<()> {
-        let readme_path = format!("{}/README.md", repo_config_file);
-        let pager = match env::var("PAGER") {
-            Ok(p) => p,
-            Err(_) => {
-                get_if_available("less").expect("Cannot locate executable - less - on your system")
-            }
-        };
-        match Command::new(&pager).arg(&readme_path).status() {
-            Ok(_) => Ok(()),
-            Err(e) => {
-                eprintln!(
-                    "Error: Could not open idea file with {} at [{}]: {}",
-                    pager, readme_path, e
-                );
-                Err(e)
-            }
-        }
     }
 }
