@@ -71,7 +71,8 @@ where
         }
 
         if opts.view {
-            self.open_idea_file()?
+            self.open_idea_file()?;
+            return Ok(());
         }
 
         if self.is_config_missing() {
