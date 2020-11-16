@@ -8,6 +8,7 @@ use clap::{App, Arg, ArgMatches};
 use termcolor::{ColorChoice, StandardStream};
 
 use eureka::file_handler::FileHandler;
+use eureka::git::Git;
 use eureka::printer::Printer;
 use eureka::program_access::ProgramAccess;
 use eureka::reader::Reader;
@@ -45,6 +46,7 @@ fn main() {
         FileHandler::default(),
         Printer::new(output),
         Reader::new(input),
+        Git::default(),
         ProgramAccess::default(),
     );
 

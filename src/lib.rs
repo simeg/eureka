@@ -6,17 +6,18 @@ extern crate termcolor;
 
 use std::io;
 
+use crate::git::GitManagement;
 use crate::program_access::ProgramOpener;
 use file_handler::{ConfigManagement, FileManagement};
-use git::Git;
 use printer::{Print, PrintColor};
 use reader::ReadInput;
+use std::io::{Error, ErrorKind};
 use types::ConfigFile::{Branch, Repo};
 
 pub mod types;
 
 pub mod file_handler;
-mod git;
+pub mod git;
 pub mod printer;
 pub mod program_access;
 pub mod reader;
@@ -25,12 +26,13 @@ pub struct Eureka<
     FH: ConfigManagement + FileManagement,
     W: Print + PrintColor,
     R: ReadInput,
+    G: GitManagement,
     PO: ProgramOpener,
 > {
     fh: FH,
     printer: W,
     reader: R,
-    git: Option<Git>,
+    git: G,
     program_opener: PO,
 }
 
@@ -40,19 +42,20 @@ pub struct EurekaOptions {
     pub view: bool,
 }
 
-impl<FH, W, R, PO> Eureka<FH, W, R, PO>
+impl<FH, W, R, G, PO> Eureka<FH, W, R, G, PO>
 where
     FH: ConfigManagement + FileManagement,
     W: Print + PrintColor,
     R: ReadInput,
+    G: GitManagement,
     PO: ProgramOpener,
 {
-    pub fn new(fh: FH, printer: W, reader: R, program_opener: PO) -> Self {
+    pub fn new(fh: FH, printer: W, reader: R, git: G, program_opener: PO) -> Self {
         Eureka {
             fh,
             printer,
             reader,
-            git: None,
+            git,
             program_opener,
         }
     }
