@@ -144,26 +144,16 @@ where
             .fh
             .config_read(Branch)
             .unwrap_or_else(|_| panic!("Branch config is missing (should never end up here"));
-        self.git.checkout_branch(&*branch_name)
-            .expect("Something went wrong checking out branch");
-        self.git.add()
+        self.git
+            .checkout_branch(&*branch_name)
+            .and_then(|_| self.git.add())
             .and_then(|_| self.git.commit(commit_subject))
-        let branch_name = self
-            .fh
-            .config_read(Branch)
-            .unwrap_or_else(|_| panic!("Branch config is missing (should never end up here"));
-        git.checkout_branch(&*branch_name)
-            .expect("Something went wrong checking out branch");
-        git.add()
-            .and_then(|_| git.commit(commit_subject))
-            .expect("Something went wrong adding or committing");
+            .expect("Something went wrong checking out branch, adding or committing");
         self.printer.println("Added and committed!");
 
         self.printer.println("Pushing your new idea..");
-        self.git.push(&*branch_name)
-            .expect("Something went wrong pushing");
-        self.git.push().expect("Something went wrong pushing");
-        git.push(&*branch_name)
+        self.git
+            .push(&*branch_name)
             .expect("Something went wrong pushing");
         self.printer.println("Pushed!");
 
@@ -196,21 +186,5 @@ where
 
     fn is_config_missing(&self) -> bool {
         self.fh.config_read(Repo).is_err() || self.fh.config_read(Branch).is_err()
-    }
-
-    fn ask_for_idea(&mut self) {
-        // TODO: Ask again if empty input
-        self.printer.input_header(">> Idea summary");
-        let idea_summary = self.reader.read_input();
-
-        let repo_path = self.fh.config_read(Repo).unwrap();
-        let readme_path = format!("{}/README.md", repo_path);
-
-        self.init_git();
-
-        match self.program_opener.open_editor(&readme_path) {
-            Ok(_) => self.git_add_commit_push(idea_summary),
-            Err(e) => panic!(e),
-        };
     }
 }

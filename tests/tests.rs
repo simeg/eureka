@@ -401,6 +401,11 @@ mod tests {
                 Ok(())
             }
 
+            fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error> {
+                assert_eq!(branch_name, "specific-branch");
+                Ok(())
+            }
+
             fn add(&self) -> Result<(), git2::Error> {
                 Ok(())
             }
@@ -410,7 +415,8 @@ mod tests {
                 Ok(Oid::zero())
             }
 
-            fn push(&self) -> Result<(), git2::Error> {
+            fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
+                assert_eq!(branch_name, "specific-branch");
                 Ok(())
             }
         }
@@ -518,6 +524,10 @@ mod tests {
             unimplemented!()
         }
 
+        fn checkout_branch(&self, _branch_name: &str) -> Result<(), git2::Error> {
+            unimplemented!()
+        }
+
         fn add(&self) -> Result<(), git2::Error> {
             unimplemented!()
         }
@@ -526,7 +536,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn push(&self) -> Result<(), git2::Error> {
+        fn push(&self, _branch_name: &str) -> Result<(), git2::Error> {
             unimplemented!()
         }
     }
