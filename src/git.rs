@@ -2,17 +2,34 @@ use git2::{Commit, Cred, Direction, ObjectType, Oid, PushOptions, RemoteCallback
 
 use std::path::Path;
 
-pub struct Git {
-    repo: Repository,
+pub trait GitManagement {
+    fn init(&mut self, repo_path: &str) -> Result<(), git2::Error>;
+    fn add(&self) -> Result<(), git2::Error>;
+    fn commit(&self, subject: String) -> Result<Oid, git2::Error>;
+    fn push(&self) -> Result<(), git2::Error>;
 }
 
-impl Git {
-    const IDEA_FILE_NAME: &'static str = "README.md";
+pub struct Git {
+    repo: Option<Repository>,
+}
 
-    pub fn new(repo_path: String) -> Self {
-        let repo = Repository::open(&Path::new(&repo_path))
-            .unwrap_or_else(|_| panic!("Could not locate repo at: {}", repo_path));
-        Self { repo }
+impl Default for Git {
+    fn default() -> Self {
+        Self { repo: None }
+    }
+}
+
+impl GitManagement for Git {
+    fn init(&mut self, repo_path: &str) -> Result<(), git2::Error> {
+        let result = Repository::open(&Path::new(&repo_path));
+
+        match result {
+            Ok(repo) => {
+                self.repo = Some(repo);
+                Ok(())
+            }
+            Err(err) => Err(err),
+        }
     }
 
     pub fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error> {
@@ -41,16 +58,17 @@ impl Git {
         index.write()
     }
 
-    pub fn commit(&self, subject: String) -> Result<Oid, git2::Error> {
-        let mut index = self.repo.index()?;
+    fn commit(&self, subject: String) -> Result<Oid, git2::Error> {
+        let repo = self.repo.as_ref().unwrap();
+        let mut index = repo.index()?;
 
-        let signature = self.repo.signature()?; // Use default user.name and user.email
+        let signature = repo.signature()?; // Use default user.name and user.email
 
         let oid = index.write_tree()?;
         let parent_commit = self.find_last_commit()?;
-        let tree = self.repo.find_tree(oid)?;
+        let tree = repo.find_tree(oid)?;
 
-        self.repo.commit(
+        repo.commit(
             Some("HEAD"),      // point HEAD to our new commit
             &signature,        // author
             &signature,        // committer
@@ -75,9 +93,19 @@ impl Git {
             Some(&mut options),
         )
     }
+}
+
+impl Git {
+    const IDEA_FILE_NAME: &'static str = "README.md";
 
     fn find_last_commit(&self) -> Result<Commit, git2::Error> {
-        let obj = self.repo.head()?.resolve()?.peel(ObjectType::Commit)?;
+        let obj = self
+            .repo
+            .as_ref()
+            .unwrap()
+            .head()?
+            .resolve()?
+            .peel(ObjectType::Commit)?;
         obj.into_commit()
             .map_err(|_| git2::Error::from_str("Couldn't find commit"))
     }
