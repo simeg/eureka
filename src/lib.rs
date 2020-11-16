@@ -98,11 +98,25 @@ where
 
             self.printer
                 .print("First time setup complete. Happy ideation!");
+            Ok(())
         } else {
-            self.ask_for_idea();
+            self.ask_for_idea()
         }
+    }
 
-        Ok(())
+    fn ask_for_idea(&mut self) -> io::Result<()> {
+        // TODO: Ask again if empty input
+        self.printer.input_header(">> Idea summary");
+        let idea_summary = self.reader.read_input();
+
+        let repo_path = self.fh.config_read(Repo)?;
+        self.git
+            .init(&repo_path)
+            .map_err(|git_err| Error::new(ErrorKind::InvalidInput, git_err))?;
+
+        self.program_opener
+            .open_editor(&format!("{}/README.md", repo_path))
+            .and(self.git_add_commit_push(idea_summary))
     }
 
     fn clear_repo(&self) -> io::Result<()> {
@@ -123,19 +137,12 @@ where
             .open_pager(&format!("{}/README.md", repo_path))
     }
 
-    fn init_git(&mut self) {
-        let repo_path = self
-            .fh
-            .config_read(Repo)
-            .unwrap_or_else(|_| panic!("Repo config is missing (should never end up here"));
-        self.git = Some(Git::new(repo_path));
-    }
-
-    fn git_add_commit_push(&mut self, commit_subject: String) {
-        let git = self.git.as_ref().unwrap();
-
+    fn git_add_commit_push(&mut self, commit_subject: String) -> io::Result<()> {
         self.printer
             .println("Adding and committing your new idea..");
+        self.git
+            .add()
+            .and_then(|_| self.git.commit(commit_subject))
         let branch_name = self
             .fh
             .config_read(Branch)
@@ -148,9 +155,12 @@ where
         self.printer.println("Added and committed!");
 
         self.printer.println("Pushing your new idea..");
+        self.git.push().expect("Something went wrong pushing");
         git.push(&*branch_name)
             .expect("Something went wrong pushing");
         self.printer.println("Pushed!");
+
+        Ok(())
     }
 
     fn setup_repo_path(&mut self) -> io::Result<()> {
