@@ -1,8 +1,13 @@
 use crate::dirs::home_dir;
-use crate::types::ConfigFile;
 
 use std::io::{ErrorKind, Read, Write};
 use std::{fs, io, path};
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum ConfigFile {
+    Branch,
+    Repo,
+}
 
 pub trait FileManagement {
     fn file_rm(&self, file: ConfigFile) -> io::Result<()>;
@@ -99,8 +104,9 @@ impl ConfigManagement for FileHandler {
 impl FileHandler {
     fn config_path_for(&self, config_type: ConfigFile) -> String {
         let file_name = match config_type {
-            ConfigFile::Repo => ConfigFile::Repo.value(),
-            ConfigFile::Branch => ConfigFile::Branch.value(),
+            // These represents files so underscore is preferred
+            ConfigFile::Repo => "branch",
+            ConfigFile::Branch => "repo_path",
         };
 
         match home_dir() {

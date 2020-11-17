@@ -7,13 +7,31 @@ use std::{io, process};
 use clap::{App, Arg, ArgMatches};
 use termcolor::{ColorChoice, StandardStream};
 
+use crate::CliFlag::*;
 use eureka::file_handler::FileHandler;
 use eureka::git::Git;
 use eureka::printer::Printer;
 use eureka::program_access::ProgramAccess;
 use eureka::reader::Reader;
-use eureka::types::CliFlag::*;
 use eureka::{Eureka, EurekaOptions};
+
+enum CliFlag {
+    ClearBranch,
+    ClearRepo,
+    ShortView,
+    View,
+}
+
+impl CliFlag {
+    pub fn value(&self) -> &str {
+        match *self {
+            CliFlag::ClearBranch => "clear-branch",
+            CliFlag::ClearRepo => "clear-repo",
+            CliFlag::ShortView => "v",
+            CliFlag::View => "view",
+        }
+    }
+}
 
 fn main() {
     let cli_flags: ArgMatches = App::new("eureka")
