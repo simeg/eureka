@@ -16,10 +16,12 @@ edition = "2018"
 exclude = [
     "assets/*",
     "tests/*",
+    "scripts/*",
 ]
 
 [badges]
 travis-ci = { repository = "simeg/eureka" }
+codecov = { repository = "simeg/eureka", branch = "master", service = "github" }
 
 [dependencies]
 clap = "2.33.3"
