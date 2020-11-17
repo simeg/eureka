@@ -6,15 +6,13 @@ extern crate termcolor;
 
 use std::io;
 
+use crate::file_handler::ConfigFile::{Branch, Repo};
 use crate::git::GitManagement;
 use crate::program_access::ProgramOpener;
 use file_handler::{ConfigManagement, FileManagement};
 use printer::{Print, PrintColor};
 use reader::ReadInput;
 use std::io::{Error, ErrorKind};
-use types::ConfigFile::{Branch, Repo};
-
-pub mod types;
 
 pub mod file_handler;
 pub mod git;
@@ -37,8 +35,13 @@ pub struct Eureka<
 }
 
 pub struct EurekaOptions {
+    // Clear the stored path to the repo
     pub clear_repo: bool,
+
+    // Clear the stored name of the branch
     pub clear_branch: bool,
+
+    // Open idea document with $PAGER (fall back to `less`)
     pub view: bool,
 }
 

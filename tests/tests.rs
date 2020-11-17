@@ -1,9 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use eureka::file_handler::{ConfigManagement, FileManagement};
+    use eureka::file_handler::{ConfigFile, ConfigManagement, FileManagement};
     use eureka::printer::{Print, PrintColor, PrintOptions};
     use eureka::reader::ReadInput;
-    use eureka::types::ConfigFile;
     use eureka::{Eureka, EurekaOptions};
 
     use eureka::git::GitManagement;
