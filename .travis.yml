@@ -1,17 +1,38 @@
 language: rust
-
 rust: stable
 
-before_script:
-  - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu # Install cargo-fmt
 script: make ci
+
+before_script:
+  - rustup component add rustfmt --toolchain stable-x86_64-unknown-linux-gnu # Install rust-fmt
+
+before_install:
+  - sudo apt-get update
 
 cache:
   cargo: true
+  directories:
+    - "${HOME}/kcov-build/"
 
-env:
-  global:
-  - RUSTFLAGS="-C link-dead-code"
+# Required by codecov
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - cmake
+      - gcc
+      - binutils-dev
+      - libiberty-dev
+      - jq
+
+jobs:
+  include:
+    - stage: coverage
+      rust: stable
+      script:
+        - ./scripts/code_coverage.sh
 
 notifications:
   email:
