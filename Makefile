@@ -1,4 +1,4 @@
-.PHONY: build check ci clean fmt install link lint release run test
+.PHONY: build check ci clippy fmt install link lint publish test
 
 BIN_NAME = eureka
 CARGO = $(shell which cargo)
@@ -9,20 +9,12 @@ build:
 check:
 	$(CARGO) check --release
 
-# TODO(simeg): Disabled until I can figure out how to make it pass on all releases
-#ci: lint build test
 ci: lint build test
-	@echo "Everything's OK 🤘"
-
-clean:
-	rm -rf ./target
 
 clippy:
 	@$(CARGO) clippy
 
-fmt: format
-
-format:
+fmt:
 	@$(CARGO) fmt
 
 install:
@@ -35,18 +27,11 @@ lint:
 	@$(CARGO) fmt --all -- --check
 	@echo "Lint OK 👌"
 
-# TODO: In CI - verify that packaged .cargo file has reasonable size
-package:
-	@$(CARGO) package --allow-dirty
-
 publish:
 	@$(CARGO) publish
 
 release:
 	@$(CARGO) build --release
-
-run:
-	@RUST_BACKTRACE=1 $(CARGO) run
 
 test:
 	@$(CARGO) test -- --nocapture && echo "Tests OK 👌"
