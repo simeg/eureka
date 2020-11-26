@@ -1,7 +1,7 @@
 use std::io;
 
 pub trait ReadInput {
-    fn read_input(&mut self) -> String;
+    fn read_input(&mut self) -> io::Result<String>;
 }
 
 pub struct Reader<R> {
@@ -15,10 +15,10 @@ impl<R> Reader<R> {
 }
 
 impl<R: io::BufRead> ReadInput for Reader<R> {
-    fn read_input(&mut self) -> String {
+    fn read_input(&mut self) -> io::Result<String> {
         let mut input = String::new();
-        self.reader.read_line(&mut input).unwrap();
-        input.trim().to_string()
+        self.reader.read_line(&mut input)?;
+        Ok(input.trim().to_string())
     }
 }
 
@@ -28,11 +28,11 @@ mod tests {
 
     #[test]
     fn test_reader_works() {
-        let input = b"  some input  ";
+        let input = b"  my input with whitespace chars  ";
         let mut reader = Reader { reader: &input[..] };
 
-        let actual = reader.read_input();
-        let expected = "some input";
+        let actual = reader.read_input().unwrap();
+        let expected = "my input with whitespace chars".to_string();
 
         assert_eq!(actual, expected);
     }

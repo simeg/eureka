@@ -1,10 +1,13 @@
-.PHONY: build check ci clippy fmt install link lint publish test
+.PHONY: build clean check ci clippy fmt install link lint publish test
 
 BIN_NAME = eureka
 CARGO = $(shell which cargo)
 
 build:
 	@$(CARGO) build
+
+clean:
+	rm -rf ~/.eureka
 
 check:
 	$(CARGO) check --release

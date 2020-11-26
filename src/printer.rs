@@ -1,16 +1,17 @@
 use crate::termcolor::{Color, ColorSpec};
 
+use std::io;
 use std::io::Write;
 
 pub trait Print {
-    fn print(&mut self, value: &str);
-    fn println(&mut self, value: &str);
+    fn print(&mut self, value: &str) -> io::Result<()>;
+    fn println(&mut self, value: &str) -> io::Result<()>;
 }
 
 pub trait PrintColor {
-    fn fts_banner(&mut self);
-    fn input_header(&mut self, value: &str);
-    fn println_styled(&mut self, value: &str, opts: PrintOptions);
+    fn fts_banner(&mut self) -> io::Result<()>;
+    fn input_header(&mut self, value: &str) -> io::Result<()>;
+    fn println_styled(&mut self, value: &str, opts: PrintOptions) -> io::Result<()>;
 }
 
 pub struct Printer<W> {
@@ -30,17 +31,17 @@ impl<W: Write + termcolor::WriteColor> Printer<W> {
 }
 
 impl<W: Write> Print for Printer<W> {
-    fn print(&mut self, value: &str) {
-        write!(self.writer, "{}", value).expect("Could not write to stdout");
+    fn print(&mut self, value: &str) -> io::Result<()> {
+        write!(self.writer, "{}", value)
     }
 
-    fn println(&mut self, value: &str) {
-        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
+    fn println(&mut self, value: &str) -> io::Result<()> {
+        writeln!(self.writer, "{}", value)
     }
 }
 
 impl<W: Write + termcolor::WriteColor> PrintColor for Printer<W> {
-    fn fts_banner(&mut self) {
+    fn fts_banner(&mut self) -> io::Result<()> {
         let opts = PrintOptions {
             color: Color::Yellow,
             is_bold: false,
@@ -63,27 +64,25 @@ will be stored.
 Once first time setup has completed, simply run Eureka again
 to begin writing down ideas.
         "#;
-        self.println_styled(&format!("{}\n{}", banner.as_str(), description), opts);
+        self.println_styled(&format!("{}\n{}", banner.as_str(), description), opts)
     }
 
-    fn input_header(&mut self, value: &str) {
+    fn input_header(&mut self, value: &str) -> io::Result<()> {
         let opts = PrintOptions {
             color: Color::Green,
             is_bold: true,
         };
-        self.println_styled(value, opts);
-        self.print("> ");
-        self.writer.flush().expect("Could not flush");
+        self.println_styled(value, opts)?;
+        self.print("> ")?;
+        self.writer.flush()
     }
 
-    fn println_styled(&mut self, value: &str, opts: PrintOptions) {
+    fn println_styled(&mut self, value: &str, opts: PrintOptions) -> io::Result<()> {
         let mut color_spec = ColorSpec::new();
         color_spec.set_fg(Some(opts.color)).set_bold(opts.is_bold);
-        self.writer
-            .set_color(&color_spec)
-            .expect("Could not set color for stdout");
-        writeln!(self.writer, "{}", value).expect("Could not write to stdout");
-        self.writer.reset().expect("Could not reset stdout");
+        self.writer.set_color(&color_spec)?;
+        writeln!(self.writer, "{}", value)?;
+        self.writer.reset()
     }
 }
 
@@ -98,7 +97,8 @@ mod tests {
             writer: &mut output,
         };
 
-        printer.print("this value");
+        let print_result = printer.print("this value");
+        assert!(print_result.is_ok());
 
         let actual = String::from_utf8(output).expect("Not UTF-8");
         let expected = "this value";
