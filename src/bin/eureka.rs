@@ -1,14 +1,15 @@
 #[macro_use]
 extern crate clap;
+extern crate pretty_env_logger;
 extern crate termcolor;
 
-use std::{io, process};
+use std::io;
 
 use clap::{App, Arg, ArgMatches};
 use termcolor::{ColorChoice, StandardStream};
 
 use crate::CliFlag::*;
-use eureka::file_handler::FileHandler;
+use eureka::config_manager::ConfigManager;
 use eureka::git::Git;
 use eureka::printer::Printer;
 use eureka::program_access::ProgramAccess;
@@ -34,6 +35,8 @@ impl CliFlag {
 }
 
 fn main() {
+    pretty_env_logger::init();
+
     let cli_flags: ArgMatches = App::new("eureka")
         .author(crate_authors!())
         .version(crate_version!())
@@ -61,7 +64,7 @@ fn main() {
     let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
 
     let mut eureka = Eureka::new(
-        FileHandler::default(),
+        ConfigManager::default(),
         Printer::new(output),
         Reader::new(input),
         Git::default(),
@@ -74,10 +77,8 @@ fn main() {
         view: cli_flags.is_present(View.value()),
     };
 
-    let status_code = match eureka.run(opts) {
-        Ok(_) => 0,
-        Err(_) => 1,
-    };
-
-    process::exit(status_code)
+    match eureka.run(opts) {
+        Ok(_) => {}
+        Err(e) => panic!("{}", e),
+    }
 }

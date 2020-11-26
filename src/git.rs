@@ -6,7 +6,7 @@ pub trait GitManagement {
     fn init(&mut self, repo_path: &str) -> Result<(), git2::Error>;
     fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error>;
     fn add(&self) -> Result<(), git2::Error>;
-    fn commit(&self, subject: String) -> Result<Oid, git2::Error>;
+    fn commit(&self, subject: &str) -> Result<Oid, git2::Error>;
     fn push(&self, branch_name: &str) -> Result<(), git2::Error>;
 }
 
@@ -59,7 +59,7 @@ impl GitManagement for Git {
         index.write()
     }
 
-    fn commit(&self, subject: String) -> Result<Oid, git2::Error> {
+    fn commit(&self, subject: &str) -> Result<Oid, git2::Error> {
         let repo = self.repo.as_ref().unwrap();
         let mut index = repo.index()?;
 

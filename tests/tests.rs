@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use eureka::file_handler::{ConfigFile, ConfigManagement, FileManagement};
+    use eureka::config_manager::{ConfigManagement, ConfigType};
     use eureka::printer::{Print, PrintColor, PrintOptions};
     use eureka::reader::ReadInput;
     use eureka::{Eureka, EurekaOptions};
@@ -14,11 +14,11 @@ mod tests {
 
     #[test]
     fn test_clear_repo() {
-        struct MockFileHandler;
+        struct MockConfigManager;
         static READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
                 unimplemented!()
             }
 
@@ -26,30 +26,28 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_read(&self, file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
                 let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter > 0 {
                     panic!("Should only be read once");
                 }
 
-                assert_eq!(file, ConfigFile::Repo);
+                assert_eq!(file, ConfigType::Repo);
                 Ok("some-path".to_string())
             }
 
-            fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
                 unimplemented!()
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, file: ConfigFile) -> io::Result<()> {
-                assert_eq!(file, ConfigFile::Repo);
+            fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
+                assert_eq!(config_type, ConfigType::Repo);
                 Ok(())
             }
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             DefaultMockPrinter {},
             DefaultMockReader {},
             DefaultGit {},
@@ -68,10 +66,10 @@ mod tests {
 
     #[test]
     fn test_clear_branch() {
-        struct MockFileHandler;
+        struct MockConfigManager;
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
                 unimplemented!()
             }
 
@@ -79,25 +77,23 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_read(&self, file: ConfigFile) -> io::Result<String> {
-                assert_eq!(file, ConfigFile::Branch);
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
+                assert_eq!(file, ConfigType::Branch);
                 Ok("some-path".to_string())
             }
 
-            fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
                 unimplemented!()
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, file: ConfigFile) -> io::Result<()> {
-                assert_eq!(file, ConfigFile::Branch);
+            fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
+                assert_eq!(config_type, ConfigType::Branch);
                 Ok(())
             }
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             DefaultMockPrinter {},
             DefaultMockReader {},
             DefaultGit {},
@@ -116,12 +112,12 @@ mod tests {
 
     #[test]
     fn test_clear_repo_and_branch() {
-        struct MockFileHandler;
+        struct MockConfigManager;
         static READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
         static RM_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
                 unimplemented!()
             }
 
@@ -129,12 +125,12 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_read(&self, file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
                 let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
-                    assert_eq!(file, ConfigFile::Repo);
+                    assert_eq!(file, ConfigType::Repo);
                 } else if counter == 1 {
-                    assert_eq!(file, ConfigFile::Branch);
+                    assert_eq!(file, ConfigType::Branch);
                 } else {
                     panic!("Should not be read this many times")
                 }
@@ -142,18 +138,16 @@ mod tests {
                 Ok("some-path".to_string())
             }
 
-            fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
                 unimplemented!()
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
                 let counter = RM_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
-                    assert_eq!(file, ConfigFile::Repo);
+                    assert_eq!(config_type, ConfigType::Repo);
                 } else if counter == 1 {
-                    assert_eq!(file, ConfigFile::Branch);
+                    assert_eq!(config_type, ConfigType::Branch);
                 }
 
                 Ok(())
@@ -161,7 +155,7 @@ mod tests {
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             DefaultMockPrinter {},
             DefaultMockReader {},
             DefaultGit {},
@@ -180,11 +174,11 @@ mod tests {
 
     #[test]
     fn test_view_ideas() {
-        struct MockFileHandler;
+        struct MockConfigManager;
         static READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
                 unimplemented!()
             }
 
@@ -192,23 +186,21 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_read(&self, file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
                 let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter > 0 {
                     panic!("Should only be read once");
                 }
 
-                assert_eq!(file, ConfigFile::Repo);
+                assert_eq!(file, ConfigType::Repo);
                 Ok("specific-repo-path".to_string())
             }
 
-            fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
                 unimplemented!()
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
                 Ok(())
             }
         }
@@ -227,7 +219,7 @@ mod tests {
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler,
+            MockConfigManager,
             DefaultMockPrinter {},
             DefaultMockReader {},
             DefaultGit {},
@@ -246,12 +238,12 @@ mod tests {
 
     #[test]
     fn test_config_dir_is_missing() {
-        struct MockFileHandler;
+        struct MockConfigManager;
         static READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
-                Ok("some-string".to_string())
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                Ok(())
             }
 
             fn config_dir_exists(&self) -> bool {
@@ -259,7 +251,7 @@ mod tests {
                 false
             }
 
-            fn config_read(&self, _file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
                 let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
                     // First it checks if any config can be found and
@@ -270,13 +262,11 @@ mod tests {
                 }
             }
 
-            fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
                 unimplemented!()
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -284,31 +274,33 @@ mod tests {
         struct MockPrinter;
 
         impl Print for MockPrinter {
-            fn print(&mut self, value: &str) {
-                assert_eq!(value, "First time setup complete. Happy ideation!");
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
             }
 
-            fn println(&mut self, _value: &str) {
-                unimplemented!()
+            fn println(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "First time setup complete. Happy ideation!");
+                Ok(())
             }
         }
 
         impl PrintColor for MockPrinter {
-            fn fts_banner(&mut self) {
+            fn fts_banner(&mut self) -> io::Result<()> {
                 // Do nothing
+                Ok(())
             }
 
-            fn input_header(&mut self, _value: &str) {
+            fn input_header(&mut self, _value: &str) -> io::Result<()> {
                 unimplemented!()
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) {
+            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
                 unimplemented!()
             }
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             MockPrinter {},
             DefaultMockReader {},
             DefaultGit {},
@@ -331,32 +323,30 @@ mod tests {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
         static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        struct MockFileHandler;
+        struct MockConfigManager;
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
-                Ok("some-string".to_string())
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                Ok(())
             }
 
             fn config_dir_exists(&self) -> bool {
                 true
             }
 
-            fn config_read(&self, _file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
                 Err(Error::new(ErrorKind::Other, "some-error"))
             }
 
-            fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()> {
+            fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigFile::Branch => assert_eq!(value, "specific-branch-name"),
-                    ConfigFile::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Branch => assert_eq!(value, "specific-branch-name"),
+                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -364,30 +354,34 @@ mod tests {
         struct MockPrinter;
 
         impl Print for MockPrinter {
-            fn print(&mut self, value: &str) {
-                assert_eq!(value, "First time setup complete. Happy ideation!");
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
             }
 
-            fn println(&mut self, _value: &str) {
-                unimplemented!()
+            fn println(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "First time setup complete. Happy ideation!");
+                Ok(())
             }
         }
 
         impl PrintColor for MockPrinter {
-            fn fts_banner(&mut self) {
+            fn fts_banner(&mut self) -> io::Result<()> {
                 // noop
+                Ok(())
             }
 
-            fn input_header(&mut self, value: &str) {
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
                 let counter = INPUT_HEADER_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
                     assert_eq!(value, "Name of branch (default: master)");
                 }
+
+                Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) {
+            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -395,20 +389,20 @@ mod tests {
         struct MockReader;
 
         impl ReadInput for MockReader {
-            fn read_input(&mut self) -> String {
+            fn read_input(&mut self) -> io::Result<String> {
                 let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
                     // Repo
-                    String::from("specific-repo-path")
+                    Ok(String::from("specific-repo-path"))
                 } else {
                     // Branch
-                    String::from("specific-branch-name")
+                    Ok(String::from("specific-branch-name"))
                 }
             }
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             MockPrinter {},
             MockReader {},
             DefaultGit {},
@@ -430,32 +424,30 @@ mod tests {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
         static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        struct MockFileHandler;
+        struct MockConfigManager;
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
-                Ok("some-string".to_string())
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                Ok(())
             }
 
             fn config_dir_exists(&self) -> bool {
                 true
             }
 
-            fn config_read(&self, _file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
                 Err(Error::new(ErrorKind::Other, "some-error"))
             }
 
-            fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()> {
+            fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigFile::Branch => assert_eq!(value, "master"),
-                    ConfigFile::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Branch => assert_eq!(value, "master"),
+                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -463,30 +455,34 @@ mod tests {
         struct MockPrinter;
 
         impl Print for MockPrinter {
-            fn print(&mut self, value: &str) {
-                assert_eq!(value, "First time setup complete. Happy ideation!");
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
             }
 
-            fn println(&mut self, _value: &str) {
-                unimplemented!()
+            fn println(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "First time setup complete. Happy ideation!");
+                Ok(())
             }
         }
 
         impl PrintColor for MockPrinter {
-            fn fts_banner(&mut self) {
+            fn fts_banner(&mut self) -> io::Result<()> {
                 // noop
+                Ok(())
             }
 
-            fn input_header(&mut self, value: &str) {
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
                 let counter = INPUT_HEADER_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
                     assert_eq!(value, "Name of branch (default: master)");
                 }
+
+                Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) {
+            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -494,21 +490,21 @@ mod tests {
         struct MockReader;
 
         impl ReadInput for MockReader {
-            fn read_input(&mut self) -> String {
+            fn read_input(&mut self) -> io::Result<String> {
                 let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter == 0 {
                     // Repo
-                    String::from("specific-repo-path")
+                    Ok(String::from("specific-repo-path"))
                 } else {
                     // Branch
                     // Leave empty to default to "master"
-                    String::new()
+                    Ok(String::new())
                 }
             }
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             MockPrinter {},
             MockReader {},
             DefaultGit {},
@@ -530,32 +526,30 @@ mod tests {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
         static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        struct MockFileHandler;
+        struct MockConfigManager;
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
-                Ok("some-string".to_string())
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                Ok(())
             }
 
             fn config_dir_exists(&self) -> bool {
                 true
             }
 
-            fn config_read(&self, _file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
                 Err(Error::new(ErrorKind::Other, "some-error"))
             }
 
-            fn config_write(&self, file: ConfigFile, value: String) -> io::Result<()> {
+            fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigFile::Branch => assert_eq!(value, "specific-branch-name"),
-                    ConfigFile::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Branch => assert_eq!(value, "specific-branch-name"),
+                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
             }
-        }
 
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -563,30 +557,33 @@ mod tests {
         struct MockPrinter;
 
         impl Print for MockPrinter {
-            fn print(&mut self, value: &str) {
-                assert_eq!(value, "First time setup complete. Happy ideation!");
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
             }
 
-            fn println(&mut self, _value: &str) {
-                unimplemented!()
+            fn println(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "First time setup complete. Happy ideation!");
+                Ok(())
             }
         }
 
         impl PrintColor for MockPrinter {
-            fn fts_banner(&mut self) {
+            fn fts_banner(&mut self) -> io::Result<()> {
                 // noop
+                Ok(())
             }
 
-            fn input_header(&mut self, value: &str) {
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
                 let counter = INPUT_HEADER_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter <= 5 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
                     assert_eq!(value, "Name of branch (default: master)");
                 }
+                Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) {
+            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -594,23 +591,23 @@ mod tests {
         struct MockReader;
 
         impl ReadInput for MockReader {
-            fn read_input(&mut self) -> String {
+            fn read_input(&mut self) -> io::Result<String> {
                 let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
                 if counter < 5 {
                     // Return empty string to prompt it to ask again
-                    String::new()
+                    Ok(String::new())
                 } else if counter == 5 {
                     // Repo
-                    String::from("specific-repo-path")
+                    Ok(String::from("specific-repo-path"))
                 } else {
                     // Branch
-                    String::from("specific-branch-name")
+                    Ok(String::from("specific-branch-name"))
                 }
             }
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             MockPrinter {},
             MockReader {},
             DefaultGit {},
@@ -628,34 +625,34 @@ mod tests {
     }
 
     #[test]
-    fn test_e2e_happy_path() {
-        static PRINT_COUNTER: AtomicUsize = AtomicUsize::new(0);
+    fn test_idea_summary_asks_until_user_provides_value() {
+        static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
+        static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
-        struct MockFileHandler;
+        struct MockConfigManager;
 
-        impl ConfigManagement for MockFileHandler {
-            fn config_dir_create(&self) -> io::Result<String> {
-                unimplemented!()
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                Ok(())
             }
 
             fn config_dir_exists(&self) -> bool {
                 true
             }
 
-            fn config_read(&self, file: ConfigFile) -> io::Result<String> {
+            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
+                Ok(String::from("specific-config-string"))
+            }
+
+            fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigFile::Branch => Ok("specific-branch".to_string()),
-                    ConfigFile::Repo => Ok("specific-repo".to_string()),
+                    ConfigType::Branch => assert_eq!(value, "specific-branch-name"),
+                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
+                Ok(())
             }
 
-            fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
-                unimplemented!()
-            }
-        }
-
-        impl FileManagement for MockFileHandler {
-            fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -663,33 +660,183 @@ mod tests {
         struct MockPrinter;
 
         impl Print for MockPrinter {
-            fn print(&mut self, _value: &str) {
+            fn print(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "First time setup complete. Happy ideation!");
+                Ok(())
+            }
+
+            fn println(&mut self, _value: &str) -> io::Result<()> {
+                // noop
+                Ok(())
+            }
+        }
+
+        impl PrintColor for MockPrinter {
+            fn fts_banner(&mut self) -> io::Result<()> {
+                // noop
+                Ok(())
+            }
+
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
+                let counter = INPUT_HEADER_COUNTER.fetch_add(1, Ordering::SeqCst);
+                if counter <= 5 {
+                    assert_eq!(value, ">> Idea summary");
+                } else {
+                    assert_eq!(value, "Name of branch (default: master)");
+                }
+                Ok(())
+            }
+
+            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        struct MockReader;
+
+        impl ReadInput for MockReader {
+            fn read_input(&mut self) -> io::Result<String> {
+                let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
+                if counter < 5 {
+                    // Return empty string to prompt it to ask again
+                    Ok(String::new())
+                } else if counter == 5 {
+                    Ok(String::from("specific-idea-summary"))
+                } else {
+                    unimplemented!()
+                }
+            }
+        }
+
+        struct MockGit;
+
+        impl GitManagement for MockGit {
+            fn init(&mut self, _repo_path: &str) -> Result<(), git2::Error> {
+                Ok(())
+            }
+
+            fn checkout_branch(&self, _branch_name: &str) -> Result<(), git2::Error> {
+                Ok(())
+            }
+
+            fn add(&self) -> Result<(), git2::Error> {
+                Ok(())
+            }
+
+            fn commit(&self, _subject: &str) -> Result<Oid, git2::Error> {
+                Ok(Oid::zero())
+            }
+
+            fn push(&self, _branch_name: &str) -> Result<(), git2::Error> {
+                Ok(())
+            }
+        }
+
+        struct MockProgramAccess;
+
+        impl ProgramOpener for MockProgramAccess {
+            fn open_editor(&self, _file_path: &str) -> io::Result<()> {
+                Ok(())
+            }
+
+            fn open_pager(&self, _file_path: &str) -> io::Result<()> {
+                Ok(())
+            }
+        }
+
+        let mut eureka = Eureka::new(
+            MockConfigManager {},
+            MockPrinter {},
+            MockReader {},
+            MockGit {},
+            MockProgramAccess {},
+        );
+        let opts = EurekaOptions {
+            clear_repo: false,
+            clear_branch: false,
+            view: false,
+        };
+
+        let actual = eureka.run(opts);
+
+        assert!(actual.is_ok());
+    }
+
+    #[test]
+    fn test_e2e_happy_path() {
+        static PRINT_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+        struct MockConfigManager;
+
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
                 unimplemented!()
             }
 
-            fn println(&mut self, value: &str) {
+            fn config_dir_exists(&self) -> bool {
+                true
+            }
+
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
+                match file {
+                    ConfigType::Branch => Ok("specific-branch".to_string()),
+                    ConfigType::Repo => Ok("specific-repo".to_string()),
+                }
+            }
+
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        struct MockPrinter;
+
+        impl Print for MockPrinter {
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn println(&mut self, value: &str) -> io::Result<()> {
                 let counter = PRINT_COUNTER.fetch_add(1, Ordering::SeqCst);
                 match counter {
-                    0 => assert_eq!(value, "Adding and committing your new idea.."),
+                    0 => assert_eq!(
+                        value,
+                        "Adding and committing your new idea to specific-branch.."
+                    ),
                     1 => assert_eq!(value, "Added and committed!"),
                     2 => assert_eq!(value, "Pushing your new idea.."),
                     3 => assert_eq!(value, "Pushed!"),
                     _ => panic!("Unknown state"),
                 }
+
+                Ok(())
             }
         }
 
         impl PrintColor for MockPrinter {
-            fn fts_banner(&mut self) {
+            fn fts_banner(&mut self) -> io::Result<()> {
                 unimplemented!()
             }
 
-            fn input_header(&mut self, value: &str) {
-                assert_eq!(value, ">> Idea summary")
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, ">> Idea summary");
+                Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) {
+            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
                 unimplemented!()
+            }
+        }
+
+        struct MockReader;
+
+        impl ReadInput for MockReader {
+            fn read_input(&mut self) -> io::Result<String> {
+                Ok(String::from("read-input-string"))
             }
         }
 
@@ -710,7 +857,7 @@ mod tests {
                 Ok(())
             }
 
-            fn commit(&self, subject: String) -> Result<Oid, git2::Error> {
+            fn commit(&self, subject: &str) -> Result<Oid, git2::Error> {
                 assert_eq!(subject, "read-input-string");
                 Ok(Oid::zero())
             }
@@ -735,9 +882,9 @@ mod tests {
         }
 
         let mut eureka = Eureka::new(
-            MockFileHandler {},
+            MockConfigManager {},
             MockPrinter {},
-            DefaultMockReader {},
+            MockReader {},
             MockGit {},
             MockProgramOpener {},
         );
@@ -760,25 +907,25 @@ mod tests {
     struct DefaultMockPrinter;
 
     impl Print for DefaultMockPrinter {
-        fn print(&mut self, _value: &str) {
+        fn print(&mut self, _value: &str) -> io::Result<()> {
             unimplemented!()
         }
 
-        fn println(&mut self, _value: &str) {
+        fn println(&mut self, _value: &str) -> io::Result<()> {
             unimplemented!()
         }
     }
 
     impl PrintColor for DefaultMockPrinter {
-        fn fts_banner(&mut self) {
+        fn fts_banner(&mut self) -> io::Result<()> {
             unimplemented!()
         }
 
-        fn input_header(&mut self, _value: &str) {
+        fn input_header(&mut self, _value: &str) -> io::Result<()> {
             unimplemented!()
         }
 
-        fn println_styled(&mut self, _value: &str, _opts: PrintOptions) {
+        fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
             unimplemented!()
         }
     }
@@ -786,15 +933,15 @@ mod tests {
     struct DefaultMockReader;
 
     impl ReadInput for DefaultMockReader {
-        fn read_input(&mut self) -> String {
-            String::from("read-input-string")
+        fn read_input(&mut self) -> io::Result<String> {
+            unimplemented!()
         }
     }
 
-    struct DefaultMockFileHandler;
+    struct DefaultMockConfigManager;
 
-    impl ConfigManagement for DefaultMockFileHandler {
-        fn config_dir_create(&self) -> io::Result<String> {
+    impl ConfigManagement for DefaultMockConfigManager {
+        fn config_dir_create(&self) -> io::Result<()> {
             unimplemented!()
         }
 
@@ -802,17 +949,15 @@ mod tests {
             unimplemented!()
         }
 
-        fn config_read(&self, _file: ConfigFile) -> io::Result<String> {
+        fn config_read(&self, _file: ConfigType) -> io::Result<String> {
             unimplemented!()
         }
 
-        fn config_write(&self, _file: ConfigFile, _value: String) -> io::Result<()> {
+        fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
             unimplemented!()
         }
-    }
 
-    impl FileManagement for DefaultMockFileHandler {
-        fn file_rm(&self, _file: ConfigFile) -> io::Result<()> {
+        fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
             unimplemented!()
         }
     }
@@ -832,7 +977,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn commit(&self, _subject: String) -> Result<Oid, git2::Error> {
+        fn commit(&self, _subject: &str) -> Result<Oid, git2::Error> {
             unimplemented!()
         }
 

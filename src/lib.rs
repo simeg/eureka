@@ -3,37 +3,40 @@ extern crate atomic_counter;
 extern crate dirs;
 extern crate git2;
 extern crate termcolor;
+#[macro_use]
+extern crate log;
 
 use std::io;
-
-use crate::file_handler::ConfigFile::{Branch, Repo};
-use crate::git::GitManagement;
-use crate::program_access::ProgramOpener;
-use file_handler::{ConfigManagement, FileManagement};
-use printer::{Print, PrintColor};
-use reader::ReadInput;
 use std::io::{Error, ErrorKind};
 
-pub mod file_handler;
+use crate::config_manager::ConfigManagement;
+use crate::config_manager::ConfigType::{Branch, Repo};
+use crate::git::GitManagement;
+use crate::printer::{Print, PrintColor};
+use crate::program_access::ProgramOpener;
+use crate::reader::ReadInput;
+
+pub mod config_manager;
 pub mod git;
 pub mod printer;
 pub mod program_access;
 pub mod reader;
 
 pub struct Eureka<
-    FH: ConfigManagement + FileManagement,
+    CM: ConfigManagement,
     W: Print + PrintColor,
     R: ReadInput,
     G: GitManagement,
     PO: ProgramOpener,
 > {
-    fh: FH,
+    cm: CM,
     printer: W,
     reader: R,
     git: G,
     program_opener: PO,
 }
 
+#[derive(Debug)]
 pub struct EurekaOptions {
     // Clear the stored path to the repo
     pub clear_repo: bool,
@@ -45,17 +48,17 @@ pub struct EurekaOptions {
     pub view: bool,
 }
 
-impl<FH, W, R, G, PO> Eureka<FH, W, R, G, PO>
+impl<CM, W, R, G, PO> Eureka<CM, W, R, G, PO>
 where
-    FH: ConfigManagement + FileManagement,
+    CM: ConfigManagement,
     W: Print + PrintColor,
     R: ReadInput,
     G: GitManagement,
     PO: ProgramOpener,
 {
-    pub fn new(fh: FH, printer: W, reader: R, git: G, program_opener: PO) -> Self {
+    pub fn new(cm: CM, printer: W, reader: R, git: G, program_opener: PO) -> Self {
         Eureka {
-            fh,
+            cm,
             printer,
             reader,
             git,
@@ -64,13 +67,16 @@ where
     }
 
     pub fn run(&mut self, opts: EurekaOptions) -> io::Result<()> {
+        debug!("Running with options: {:?}", &opts);
         if opts.clear_repo || opts.clear_branch {
             if opts.clear_repo {
                 self.clear_repo()?;
+                debug!("Cleared repo");
             }
 
             if opts.clear_branch {
                 self.clear_branch()?;
+                debug!("Cleared branch");
             }
 
             return Ok(());
@@ -82,25 +88,30 @@ where
         }
 
         if self.is_config_missing() {
+            debug!("Config is missing");
+
             // If config dir is missing - create it
-            if !self.fh.config_dir_exists() {
-                self.fh.config_dir_create()?;
+            if !self.cm.config_dir_exists() {
+                self.cm.config_dir_create()?;
+                debug!("Created config dir");
             }
 
-            self.printer.fts_banner();
+            self.printer.fts_banner()?;
 
             // If repo path is missing - ask for it
-            if self.fh.config_read(Repo).is_err() {
+            if self.cm.config_read(Repo).is_err() {
                 self.setup_repo_path()?;
+                debug!("Setup repo path successfully");
             }
 
             // If branch name is missing - ask for it
-            if self.fh.config_read(Branch).is_err() {
+            if self.cm.config_read(Branch).is_err() {
                 self.setup_branch_name()?;
+                debug!("Setup branch name successfully");
             }
 
             self.printer
-                .print("First time setup complete. Happy ideation!");
+                .println("First time setup complete. Happy ideation!")?;
             Ok(())
         } else {
             self.ask_for_idea()
@@ -108,11 +119,14 @@ where
     }
 
     fn ask_for_idea(&mut self) -> io::Result<()> {
-        // TODO: Ask again if empty input
-        self.printer.input_header(">> Idea summary");
-        let idea_summary = self.reader.read_input();
+        let mut idea_summary = String::new();
 
-        let repo_path = self.fh.config_read(Repo)?;
+        while idea_summary.is_empty() {
+            self.printer.input_header(">> Idea summary")?;
+            idea_summary = self.reader.read_input()?;
+        }
+
+        let repo_path = self.cm.config_read(Repo)?;
         self.git
             .init(&repo_path)
             .map_err(|git_err| Error::new(ErrorKind::InvalidInput, git_err))?;
@@ -123,42 +137,40 @@ where
     }
 
     fn clear_repo(&self) -> io::Result<()> {
-        self.fh
+        self.cm
             .config_read(Repo)
-            .and_then(|_| self.fh.file_rm(Repo))
+            .and_then(|_| self.cm.config_rm(Repo))
     }
 
     fn clear_branch(&self) -> io::Result<()> {
-        self.fh
+        self.cm
             .config_read(Branch)
-            .and_then(|_| self.fh.file_rm(Branch))
+            .and_then(|_| self.cm.config_rm(Branch))
     }
 
     fn open_idea_file(&self) -> io::Result<()> {
-        let repo_path = self.fh.config_read(Repo)?;
         self.program_opener
-            .open_pager(&format!("{}/README.md", repo_path))
+            .open_pager(&format!("{}/README.md", self.cm.config_read(Repo)?))
     }
 
     fn git_add_commit_push(&mut self, commit_subject: String) -> io::Result<()> {
-        self.printer
-            .println("Adding and committing your new idea..");
-        let branch_name = self
-            .fh
-            .config_read(Branch)
-            .unwrap_or_else(|_| panic!("Branch config is missing (should never end up here"));
+        let branch_name = self.cm.config_read(Branch)?;
+        self.printer.println(&format!(
+            "Adding and committing your new idea to {}..",
+            &branch_name
+        ))?;
         self.git
-            .checkout_branch(&*branch_name)
+            .checkout_branch(branch_name.as_str())
             .and_then(|_| self.git.add())
-            .and_then(|_| self.git.commit(commit_subject))
-            .expect("Something went wrong checking out branch, adding or committing");
-        self.printer.println("Added and committed!");
+            .and_then(|_| self.git.commit(commit_subject.as_str()))
+            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+        self.printer.println("Added and committed!")?;
 
-        self.printer.println("Pushing your new idea..");
+        self.printer.println("Pushing your new idea..")?;
         self.git
-            .push(&*branch_name)
-            .expect("Something went wrong pushing");
-        self.printer.println("Pushed!");
+            .push(branch_name.as_str())
+            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+        self.printer.println("Pushed!")?;
 
         Ok(())
     }
@@ -167,27 +179,28 @@ where
         let mut input_repo_path = String::new();
 
         while input_repo_path.is_empty() {
-            self.printer.input_header("Absolute path to your idea repo");
-            input_repo_path = self.reader.read_input();
+            self.printer
+                .input_header("Absolute path to your idea repo")?;
+            input_repo_path = self.reader.read_input()?;
         }
 
-        self.fh.config_write(Repo, input_repo_path)
+        self.cm.config_write(Repo, input_repo_path)
     }
 
     fn setup_branch_name(&mut self) -> io::Result<()> {
         self.printer
-            .input_header("Name of branch (default: master)");
-        let mut branch_name = self.reader.read_input();
+            .input_header("Name of branch (default: master)")?;
+        let mut branch_name = self.reader.read_input()?;
 
         // Default to "master"
         if branch_name.is_empty() {
             branch_name = "master".to_string();
         }
 
-        self.fh.config_write(Branch, branch_name)
+        self.cm.config_write(Branch, branch_name)
     }
 
     fn is_config_missing(&self) -> bool {
-        self.fh.config_read(Repo).is_err() || self.fh.config_read(Branch).is_err()
+        self.cm.config_read(Repo).is_err() || self.cm.config_read(Branch).is_err()
     }
 }
