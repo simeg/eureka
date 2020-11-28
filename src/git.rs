@@ -41,8 +41,8 @@ impl GitManagement for Git {
             .map(|head| head.target())
             .and_then(|oid| repo.find_commit(oid.unwrap()))?;
 
-        // Create new branch if it doesn't exist and swallow error
-        let _branch = repo.branch(branch_name, &commit, false);
+        // Create new branch if it doesn't exist
+        repo.branch(branch_name, &commit, false)?;
 
         let refname = format!("refs/heads/{}", branch_name);
         let obj = repo.revparse_single(&*refname)?;

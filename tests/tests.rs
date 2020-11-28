@@ -286,7 +286,7 @@ mod tests {
 
         impl PrintColor for MockPrinter {
             fn fts_banner(&mut self) -> io::Result<()> {
-                // Do nothing
+                // noop
                 Ok(())
             }
 
