@@ -37,4 +37,4 @@ release:
 	@$(CARGO) build --release
 
 test:
-	@$(CARGO) test -- --nocapture && echo "Tests OK 👌"
+	@$(CARGO) test -- --nocapture --test-threads=1 && echo "Tests OK 👌"
