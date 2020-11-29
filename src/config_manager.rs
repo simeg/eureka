@@ -102,49 +102,73 @@ impl ConfigManager {
 mod tests {
     use crate::config_manager::{ConfigManagement, ConfigManager, ConfigType};
     use std::io::{Read, Write};
+    use std::path::PathBuf;
     use std::{env, fs, io, panic, path};
     use tempfile::TempDir;
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     #[test]
-    fn test_config_manager__config_dir_path() {
+    fn test_config_manager__config_dir_path() -> TestResult {
         let cm = ConfigManager {};
-        env::set_var("HOME", "/tmp/eureka");
+        let (_config_dir, tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_dir_path().unwrap();
-        let expected = "/tmp/eureka/.eureka";
+        let expected = tmp_dir
+            .path()
+            .join(".eureka")
+            .into_os_string()
+            .into_string()
+            .unwrap();
 
-        assert_eq!(actual, expected)
+        env::remove_var("HOME");
+
+        assert_eq!(actual, expected);
+        Ok(())
     }
 
     #[test]
-    fn test_config_manager__config_dir_for__branch() {
+    fn test_config_manager__config_dir_for__branch() -> TestResult {
         let cm = ConfigManager {};
-        env::set_var("HOME", "/tmp/eureka");
+        let (_config_dir, tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_path_for(ConfigType::Branch).unwrap();
-        let expected = "/tmp/eureka/.eureka/branch";
+        let expected = tmp_dir
+            .path()
+            .join(".eureka/branch")
+            .into_os_string()
+            .into_string()
+            .unwrap();
 
-        assert_eq!(actual, expected)
+        env::remove_var("HOME");
+
+        assert_eq!(actual, expected);
+        Ok(())
     }
 
     #[test]
-    fn test_config_manager__config_dir_for__repo() {
+    fn test_config_manager__config_dir_for__repo() -> TestResult {
         let cm = ConfigManager {};
-        env::set_var("HOME", "/tmp/eureka");
+        let (_config_dir, tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_path_for(ConfigType::Repo).unwrap();
-        let expected = "/tmp/eureka/.eureka/repo_path";
+        let expected = tmp_dir
+            .path()
+            .join(".eureka/repo_path")
+            .into_os_string()
+            .into_string()
+            .unwrap();
 
-        assert_eq!(actual, expected)
+        env::remove_var("HOME");
+
+        assert_eq!(actual, expected);
+        Ok(())
     }
 
     #[test]
     fn test_config_manager__config_dir_create() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        env::set_var("HOME", tmp_dir.path());
+        let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_dir_create();
 
@@ -157,10 +181,7 @@ mod tests {
     #[test]
     fn test_config_manager__config_dir_exists__success() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        fs::create_dir_all(tmp_dir.path().join(".eureka"))?;
-        env::set_var("HOME", tmp_dir.path());
+        let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let config_dir_exists = cm.config_dir_exists();
 
@@ -173,8 +194,7 @@ mod tests {
     #[test]
     fn test_config_manager__config_dir_exists__failure() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        env::set_var("HOME", tmp_dir.path());
+        let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         let config_dir_exists = cm.config_dir_exists();
 
@@ -187,14 +207,10 @@ mod tests {
     #[test]
     fn test_config_manager__config_read__success() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         let mut file =
             fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
         file.write_all("this-repo-path-value".as_bytes())?;
-        env::set_var("HOME", tmp_dir.path());
 
         let actual = cm.config_read(ConfigType::Repo)?;
         let expected = "this-repo-path-value";
@@ -208,13 +224,9 @@ mod tests {
     #[test]
     fn test_config_manager__config_read__file_is_empty__failure() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
-        env::set_var("HOME", tmp_dir.path());
 
         let actual = cm.config_read(ConfigType::Repo).map_err(|e| e.kind());
         let expected = Err(io::ErrorKind::NotFound);
@@ -228,11 +240,7 @@ mod tests {
     #[test]
     fn test_config_manager__config_read__file_does_not_exist__failure() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
-        env::set_var("HOME", tmp_dir.path());
+        let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let actual = cm.config_read(ConfigType::Repo).map_err(|e| e.kind());
         let expected = Err(io::ErrorKind::NotFound);
@@ -247,11 +255,7 @@ mod tests {
     fn test_config_manager__config_write__config_file_does_not_already_exist__success() -> TestResult
     {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
-        env::set_var("HOME", tmp_dir.path());
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
 
@@ -259,10 +263,8 @@ mod tests {
 
         assert!(write_result.is_ok());
 
-        // Assert file content
-        let mut file = fs::File::open(&config_dir.join("repo_path"))?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
+        // Assert file contents
+        let contents = get_file_contents(&config_dir)?;
 
         assert_eq!(contents, "this-specific-value");
         Ok(())
@@ -271,12 +273,9 @@ mod tests {
     #[test]
     fn test_config_manager__config_write__config_file_already_exists__success() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
+        // Create file but leave it empty
         let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
-        env::set_var("HOME", tmp_dir.path());
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
 
@@ -284,7 +283,7 @@ mod tests {
 
         assert!(write_result.is_ok());
 
-        // Assert file content
+        // Assert file contents
         let mut file = fs::File::open(&config_dir.join("repo_path"))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -296,13 +295,9 @@ mod tests {
     #[test]
     fn test_config_manager__config_rm__success() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
-        env::set_var("HOME", tmp_dir.path());
 
         let actual = cm.config_rm(ConfigType::Repo);
 
@@ -315,11 +310,7 @@ mod tests {
     #[test]
     fn test_config_manager__config_rm__file_does_not_exist__failure() -> TestResult {
         let cm = ConfigManager {};
-        let tmp_dir = TempDir::new()?;
-        // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
-        fs::create_dir_all(&config_dir)?;
-        env::set_var("HOME", tmp_dir.path());
+        let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let actual = cm.config_rm(ConfigType::Repo).map_err(|e| e.kind());
         let expected = Err(io::ErrorKind::NotFound);
@@ -328,5 +319,32 @@ mod tests {
 
         assert_eq!(actual, expected);
         Ok(())
+    }
+
+    fn set_config_dir() -> io::Result<(PathBuf, TempDir)> {
+        let tmp_dir = TempDir::new()?;
+        // Create the config dir. When tmp_dir is destroyed it will be deleted
+        let config_dir = tmp_dir.path().join(".eureka");
+
+        env::set_var("HOME", tmp_dir.path());
+
+        // tmp_dir cannot be destroyed yet, so return it
+        Ok((config_dir, tmp_dir))
+    }
+
+    fn set_and_create_config_dir() -> io::Result<(PathBuf, TempDir)> {
+        let (config_dir, tmp_dir) = set_config_dir()?;
+
+        fs::create_dir_all(&config_dir)?;
+
+        // tmp_dir cannot be destroyed yet, so return it
+        Ok((config_dir, tmp_dir))
+    }
+
+    fn get_file_contents(config_dir: &PathBuf) -> io::Result<String> {
+        let mut file = fs::File::open(&config_dir.join("repo_path"))?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        Ok(contents)
     }
 }
