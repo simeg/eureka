@@ -82,7 +82,7 @@ impl ConfigManager {
         };
 
         self.config_dir_path()
-            .map(|path| format!("{path}/{file_name}", path = path, file_name = file_name))
+            .map(|path| format!("{}/{}", path, file_name))
     }
 
     fn config_dir_path(&self) -> io::Result<String> {

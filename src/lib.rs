@@ -127,6 +127,7 @@ where
         }
 
         let repo_path = self.cm.config_read(Repo)?;
+        // We can set initialize git now as we have the repo path
         self.git
             .init(&repo_path)
             .map_err(|git_err| Error::new(ErrorKind::InvalidInput, git_err))?;

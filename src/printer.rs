@@ -91,7 +91,7 @@ mod tests {
     use crate::printer::{Print, Printer};
 
     #[test]
-    fn test_printer_works() {
+    fn test_print_works() {
         let mut output = Vec::new();
         let mut printer = Printer {
             writer: &mut output,
@@ -102,6 +102,22 @@ mod tests {
 
         let actual = String::from_utf8(output).expect("Not UTF-8");
         let expected = "this value";
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_println_works() {
+        let mut output = Vec::new();
+        let mut printer = Printer {
+            writer: &mut output,
+        };
+
+        let print_result = printer.println("this value");
+        assert!(print_result.is_ok());
+
+        let actual = String::from_utf8(output).expect("Not UTF-8");
+        let expected = "this value\n";
 
         assert_eq!(actual, expected);
     }

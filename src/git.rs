@@ -22,15 +22,7 @@ impl Default for Git {
 
 impl GitManagement for Git {
     fn init(&mut self, repo_path: &str) -> Result<(), git2::Error> {
-        let result = Repository::open(&Path::new(&repo_path));
-
-        match result {
-            Ok(repo) => {
-                self.repo = Some(repo);
-                Ok(())
-            }
-            Err(err) => Err(err),
-        }
+        Repository::open(&Path::new(&repo_path)).map(|repo| self.repo = Some(repo))
     }
 
     fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error> {
@@ -55,7 +47,7 @@ impl GitManagement for Git {
     fn add(&self) -> Result<(), git2::Error> {
         let mut index = self.repo.as_ref().unwrap().index()?;
 
-        index.add_path(Path::new(Git::IDEA_FILE_NAME))?;
+        index.add_path(Path::new("README.md"))?;
         index.write()
     }
 
@@ -80,7 +72,7 @@ impl GitManagement for Git {
     }
 
     fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
-        let mut remote = self.repo.as_ref().unwrap().find_remote("origin").unwrap();
+        let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
 
         remote.connect_auth(Direction::Push, Some(self.get_callbacks()), None)?;
 
@@ -97,8 +89,6 @@ impl GitManagement for Git {
 }
 
 impl Git {
-    const IDEA_FILE_NAME: &'static str = "README.md";
-
     fn find_last_commit(&self) -> Result<Commit, git2::Error> {
         let obj = self
             .repo
