@@ -1,0 +1,73 @@
+name: CI
+
+on: push
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Needed for codecov
+
+      # Read from cache
+      - name: Read from cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # Setup rust compiler
+      - name: Setup rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt clippy
+
+      # Check dependency errors
+      - name: Check for errors
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+
+      # Lint
+      - name: Lint
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+      # Clippy
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+
+      # Test
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -- --test-threads=1
+
+      - name: Generate test coverage
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          args: '-- --test-threads=1'
+
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
