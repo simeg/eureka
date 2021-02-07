@@ -1,4 +1,7 @@
-use git2::{Commit, Cred, Direction, ObjectType, Oid, PushOptions, RemoteCallbacks, Repository};
+use git2::{
+    Commit, Cred, Direction, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks,
+    Repository,
+};
 
 use std::path::Path;
 
@@ -34,7 +37,15 @@ impl GitManagement for Git {
             .and_then(|oid| repo.find_commit(oid.unwrap()))?;
 
         // Create new branch if it doesn't exist
-        repo.branch(branch_name, &commit, false)?;
+        match repo.branch(branch_name, &commit, false) {
+            // This command can fail due to an existing reference. This error should be ignored.
+            Err(err)
+                if !(err.class() == ErrorClass::Reference && err.code() == ErrorCode::Exists) =>
+            {
+                return Err(err);
+            }
+            _ => {}
+        }
 
         let refname = format!("refs/heads/{}", branch_name);
         let obj = repo.revparse_single(&*refname)?;
