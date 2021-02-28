@@ -63,7 +63,7 @@ jobs:
           args: -- --test-threads=1
 
       - name: Generate test coverage
-        uses: actions-rs/tarpaulin@v0.1
+        uses: actions-rs/tarpaulin@v0.1.3
         with:
           args: '-- --test-threads=1'
 
