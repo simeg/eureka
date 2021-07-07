@@ -21,10 +21,10 @@ exclude = [
 
 [dependencies]
 clap = "2.33.3"
-dirs = "3.0.1"
-git2 = "0.13.17"
+dirs = "3.0.2"
+git2 = "0.13.20"
 termcolor = "1.1.2"
-which = "4.0.2"
+which = "4.1.0"
 log = "0.4.14"
 pretty_env_logger = "0.4.0"
 
