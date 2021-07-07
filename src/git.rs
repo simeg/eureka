@@ -1,8 +1,9 @@
 use git2::{
-    Commit, Cred, Direction, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks,
+    Commit, Cred, Error, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks,
     Repository,
 };
 
+use std::env;
 use std::path::Path;
 
 pub trait GitManagement {
@@ -10,7 +11,8 @@ pub trait GitManagement {
     fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error>;
     fn add(&self) -> Result<(), git2::Error>;
     fn commit(&self, subject: &str) -> Result<Oid, git2::Error>;
-    fn push(&self, branch_name: &str) -> Result<(), git2::Error>;
+    fn push_ssh(&self, branch_name: &str) -> Result<(), git2::Error>;
+    fn push_https(&self, branch_name: &str) -> Result<(), git2::Error>;
 }
 
 pub struct Git {
@@ -82,22 +84,16 @@ impl GitManagement for Git {
         )
     }
 
-    fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
-        let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
+    fn push_ssh(&self, branch_name: &str) -> Result<(), git2::Error> {
+        self.push(&branch_name, self.get_ssh_callbacks())
+    }
 
-        remote.connect_auth(Direction::Push, Some(self.get_callbacks()), None)?;
-
-        let mut options = PushOptions::default();
-        options.remote_callbacks(self.get_callbacks());
-        remote.push(
-            &[format!(
-                "refs/heads/{}:refs/heads/{}",
-                branch_name, branch_name
-            )],
-            Some(&mut options),
-        )
+    fn push_https(&self, branch_name: &str) -> Result<(), git2::Error> {
+        self.push(&branch_name, self.get_https_callbacks())
     }
 }
+
+const GIT_USERNAME_DEFAULT: &str = "git";
 
 impl Git {
     fn find_last_commit(&self) -> Result<Commit, git2::Error> {
@@ -111,12 +107,49 @@ impl Git {
         obj.into_commit()
             .map_err(|_| git2::Error::from_str("Couldn't find commit"))
     }
+}
 
-    fn get_callbacks<'a>(&self) -> RemoteCallbacks<'a> {
+impl Git {
+    fn get_ssh_callbacks(&self) -> RemoteCallbacks {
         let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_url, username, _allowed_types| {
-            Cred::ssh_key_from_agent(username.unwrap())
+        callbacks.credentials(|_url, user_from_url, allowed_types| {
+            let username = user_from_url.unwrap_or(GIT_USERNAME_DEFAULT);
+            if allowed_types.contains(git2::CredentialType::USERNAME) {
+                git2::Cred::username(username)
+            } else {
+                git2::Cred::ssh_key_from_agent(username)
+            }
         });
         callbacks
+    }
+
+    fn get_https_callbacks(&self) -> RemoteCallbacks {
+        let mut callbacks = RemoteCallbacks::new();
+        callbacks.credentials(|_url, user_from_url, _allowed_types| {
+            let username = user_from_url.unwrap_or(GIT_USERNAME_DEFAULT);
+            Cred::ssh_key(
+                username,
+                None,
+                // TODO: Handle env resolving better
+                std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
+                None,
+            )
+        });
+        callbacks
+    }
+
+    fn push(&self, branch_name: &&str, callbacks: RemoteCallbacks) -> Result<(), Error> {
+        let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
+
+        let mut options = PushOptions::default();
+        options.remote_callbacks(callbacks);
+
+        remote.push(
+            &[format!(
+                "refs/heads/{}:refs/heads/{}",
+                branch_name, branch_name
+            )],
+            Some(&mut options),
+        )
     }
 }
