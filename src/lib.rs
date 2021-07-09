@@ -171,16 +171,9 @@ where
 
         self.printer.println("Pushing your new idea..")?;
 
-        // Try pushing with SSH, fall back to HTTPS
-        match self.git.push_ssh(branch_name.as_str()) {
-            Ok(_) => {}
-            Err(_) => {
-                debug!("Failed to push to SSH, will try HTTPS");
-                self.git
-                    .push_https(branch_name.as_str())
-                    .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
-            }
-        };
+        self.git
+            .push(branch_name.as_str())
+            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
 
         self.printer.println("Pushed!")?;
 

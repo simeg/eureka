@@ -1,9 +1,7 @@
 use git2::{
-    Commit, Cred, Error, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks,
-    Repository,
+    Commit, Error, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks, Repository,
 };
 
-use std::env;
 use std::path::Path;
 
 pub trait GitManagement {
@@ -11,8 +9,7 @@ pub trait GitManagement {
     fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error>;
     fn add(&self) -> Result<(), git2::Error>;
     fn commit(&self, subject: &str) -> Result<Oid, git2::Error>;
-    fn push_ssh(&self, branch_name: &str) -> Result<(), git2::Error>;
-    fn push_https(&self, branch_name: &str) -> Result<(), git2::Error>;
+    fn push(&self, branch_name: &str) -> Result<(), git2::Error>;
 }
 
 pub struct Git {
@@ -84,12 +81,8 @@ impl GitManagement for Git {
         )
     }
 
-    fn push_ssh(&self, branch_name: &str) -> Result<(), git2::Error> {
-        self.push(&branch_name, self.get_ssh_callbacks())
-    }
-
-    fn push_https(&self, branch_name: &str) -> Result<(), git2::Error> {
-        self.push(&branch_name, self.get_https_callbacks())
+    fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
+        self.push(&branch_name, self.get_callbacks())
     }
 }
 
@@ -110,30 +103,65 @@ impl Git {
 }
 
 impl Git {
-    fn get_ssh_callbacks(&self) -> RemoteCallbacks {
+    fn get_callbacks(&self) -> RemoteCallbacks {
         let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_url, user_from_url, allowed_types| {
-            let username = user_from_url.unwrap_or(GIT_USERNAME_DEFAULT);
-            if allowed_types.contains(git2::CredentialType::USERNAME) {
-                git2::Cred::username(username)
-            } else {
-                git2::Cred::ssh_key_from_agent(username)
-            }
-        });
-        callbacks
-    }
+        callbacks.credentials(|url, username_from_url, allowed_types| {
+            let username = username_from_url.unwrap_or(GIT_USERNAME_DEFAULT);
 
-    fn get_https_callbacks(&self) -> RemoteCallbacks {
-        let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_url, user_from_url, _allowed_types| {
-            let username = user_from_url.unwrap_or(GIT_USERNAME_DEFAULT);
-            Cred::ssh_key(
-                username,
-                None,
-                // TODO: Handle env resolving better
-                std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
-                None,
-            )
+            debug!("get_callbacks: got username: {}", &username);
+            debug!("get_callbacks: allowed types: {:?}", &allowed_types);
+
+            if allowed_types.contains(git2::CredentialType::SSH_KEY)
+                || allowed_types.contains(git2::CredentialType::SSH_CUSTOM)
+                || allowed_types.contains(git2::CredentialType::SSH_MEMORY)
+            {
+                debug!("get_callbacks: allowed types contains ssh custom or ssh key");
+                let result = git2::Cred::ssh_key_from_agent(username);
+
+                if result.is_err() {
+                    debug!(
+                        "get_callbacks: got auth error: {}",
+                        result.as_ref().err().unwrap()
+                    );
+                } else {
+                    debug!("get_callbacks: got creds");
+                    let cred = result.as_ref().unwrap();
+                    debug!("get_callbacks: cred username: {}", cred.has_username());
+                    debug!("get_callbacks: cred type: {}", cred.credtype());
+                }
+
+                result
+            } else if allowed_types.contains(git2::CredentialType::USERNAME) {
+                debug!("get_callbacks: allowed_types contains username");
+                let result = git2::Cred::username(username);
+
+                if result.is_err() {
+                    debug!(
+                        "get_callbacks: got auth error: {}",
+                        result.as_ref().err().unwrap()
+                    );
+                }
+
+                result
+            } else {
+                debug!("get_callbacks: using credential helper");
+                let config = git2::Config::open_default()?;
+                let result = git2::Cred::credential_helper(&config, url, Some(username));
+
+                if result.is_err() {
+                    debug!(
+                        "get_callbacks: got auth error: {}",
+                        result.as_ref().err().unwrap()
+                    );
+                } else {
+                    debug!("get_callbacks: got creds");
+                    let cred = result.as_ref().unwrap();
+                    debug!("get_callbacks: cred username: {}", cred.has_username());
+                    debug!("get_callbacks: cred type: {}", cred.credtype());
+                }
+
+                result
+            }
         });
         callbacks
     }
@@ -141,15 +169,24 @@ impl Git {
     fn push(&self, branch_name: &&str, callbacks: RemoteCallbacks) -> Result<(), Error> {
         let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
 
-        let mut options = PushOptions::default();
+        let mut options = PushOptions::new();
         options.remote_callbacks(callbacks);
 
-        remote.push(
+        let result = remote.push(
             &[format!(
                 "refs/heads/{}:refs/heads/{}",
                 branch_name, branch_name
             )],
             Some(&mut options),
-        )
+        );
+
+        if result.is_err() {
+            debug!(
+                "push: could not push due to error: {}",
+                result.as_ref().err().unwrap()
+            );
+        }
+
+        result
     }
 }
