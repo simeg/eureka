@@ -727,8 +727,12 @@ mod tests {
                 Ok(Oid::zero())
             }
 
-            fn push(&self, _branch_name: &str) -> Result<(), git2::Error> {
+            fn push_ssh(&self, _branch_name: &str) -> Result<(), git2::Error> {
                 Ok(())
+            }
+
+            fn push_https(&self, branch_name: &str) -> Result<(), git2::Error> {
+                unimplemented!()
             }
         }
 
@@ -862,9 +866,13 @@ mod tests {
                 Ok(Oid::zero())
             }
 
-            fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
+            fn push_ssh(&self, branch_name: &str) -> Result<(), git2::Error> {
                 assert_eq!(branch_name, "specific-branch");
                 Ok(())
+            }
+
+            fn push_https(&self, branch_name: &str) -> Result<(), git2::Error> {
+                unimplemented!()
             }
         }
 
@@ -981,7 +989,11 @@ mod tests {
             unimplemented!()
         }
 
-        fn push(&self, _branch_name: &str) -> Result<(), git2::Error> {
+        fn push_ssh(&self, _branch_name: &str) -> Result<(), git2::Error> {
+            unimplemented!()
+        }
+
+        fn push_https(&self, branch_name: &str) -> Result<(), git2::Error> {
             unimplemented!()
         }
     }

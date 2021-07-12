@@ -1,6 +1,5 @@
 use git2::{
-    Commit, Cred, Direction, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks,
-    Repository,
+    Commit, Error, ErrorClass, ErrorCode, ObjectType, Oid, PushOptions, RemoteCallbacks, Repository,
 };
 
 use std::path::Path;
@@ -83,21 +82,11 @@ impl GitManagement for Git {
     }
 
     fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
-        let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
-
-        remote.connect_auth(Direction::Push, Some(self.get_callbacks()), None)?;
-
-        let mut options = PushOptions::default();
-        options.remote_callbacks(self.get_callbacks());
-        remote.push(
-            &[format!(
-                "refs/heads/{}:refs/heads/{}",
-                branch_name, branch_name
-            )],
-            Some(&mut options),
-        )
+        self.push(&branch_name, self.get_callbacks())
     }
 }
+
+const GIT_USERNAME_DEFAULT: &str = "git";
 
 impl Git {
     fn find_last_commit(&self) -> Result<Commit, git2::Error> {
@@ -111,12 +100,93 @@ impl Git {
         obj.into_commit()
             .map_err(|_| git2::Error::from_str("Couldn't find commit"))
     }
+}
 
-    fn get_callbacks<'a>(&self) -> RemoteCallbacks<'a> {
+impl Git {
+    fn get_callbacks(&self) -> RemoteCallbacks {
         let mut callbacks = RemoteCallbacks::new();
-        callbacks.credentials(|_url, username, _allowed_types| {
-            Cred::ssh_key_from_agent(username.unwrap())
+        callbacks.credentials(|url, username_from_url, allowed_types| {
+            let username = username_from_url.unwrap_or(GIT_USERNAME_DEFAULT);
+
+            debug!("get_callbacks: got username: {}", &username);
+            debug!("get_callbacks: allowed types: {:?}", &allowed_types);
+
+            if allowed_types.contains(git2::CredentialType::SSH_KEY)
+                || allowed_types.contains(git2::CredentialType::SSH_CUSTOM)
+                || allowed_types.contains(git2::CredentialType::SSH_MEMORY)
+            {
+                debug!("get_callbacks: allowed types contains ssh custom or ssh key");
+                let result = git2::Cred::ssh_key_from_agent(username);
+
+                if result.is_err() {
+                    debug!(
+                        "get_callbacks: got auth error: {}",
+                        result.as_ref().err().unwrap()
+                    );
+                } else {
+                    debug!("get_callbacks: got creds");
+                    let cred = result.as_ref().unwrap();
+                    debug!("get_callbacks: cred username: {}", cred.has_username());
+                    debug!("get_callbacks: cred type: {}", cred.credtype());
+                }
+
+                result
+            } else if allowed_types.contains(git2::CredentialType::USERNAME) {
+                debug!("get_callbacks: allowed_types contains username");
+                let result = git2::Cred::username(username);
+
+                if result.is_err() {
+                    debug!(
+                        "get_callbacks: got auth error: {}",
+                        result.as_ref().err().unwrap()
+                    );
+                }
+
+                result
+            } else {
+                debug!("get_callbacks: using credential helper");
+                let config = git2::Config::open_default()?;
+                let result = git2::Cred::credential_helper(&config, url, Some(username));
+
+                if result.is_err() {
+                    debug!(
+                        "get_callbacks: got auth error: {}",
+                        result.as_ref().err().unwrap()
+                    );
+                } else {
+                    debug!("get_callbacks: got creds");
+                    let cred = result.as_ref().unwrap();
+                    debug!("get_callbacks: cred username: {}", cred.has_username());
+                    debug!("get_callbacks: cred type: {}", cred.credtype());
+                }
+
+                result
+            }
         });
         callbacks
+    }
+
+    fn push(&self, branch_name: &&str, callbacks: RemoteCallbacks) -> Result<(), Error> {
+        let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
+
+        let mut options = PushOptions::new();
+        options.remote_callbacks(callbacks);
+
+        let result = remote.push(
+            &[format!(
+                "refs/heads/{}:refs/heads/{}",
+                branch_name, branch_name
+            )],
+            Some(&mut options),
+        );
+
+        if result.is_err() {
+            debug!(
+                "push: could not push due to error: {}",
+                result.as_ref().err().unwrap()
+            );
+        }
+
+        result
     }
 }
