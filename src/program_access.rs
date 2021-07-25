@@ -102,7 +102,7 @@ mod tests {
         let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
-        let editor_value = env::var("EDITOR").unwrap();
+        let editor_value = env::var("EDITOR").unwrap_or("vi".to_string());
         env::set_var("EDITOR", "echo");
 
         program_access.open_editor(file_path)?;
@@ -116,7 +116,7 @@ mod tests {
         let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
-        let pager_value = env::var("PAGER").unwrap();
+        let pager_value = env::var("PAGER").unwrap_or("less".to_string());
         env::set_var("PAGER", "echo");
 
         program_access.open_pager(file_path)?;
