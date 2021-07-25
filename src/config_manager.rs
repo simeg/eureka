@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_dir_path() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_dir_path().unwrap();
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_dir_for__branch() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_path_for(ConfigType::Branch).unwrap();
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_dir_for__repo() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_path_for(ConfigType::Repo).unwrap();
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_dir_create() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_dir_create();
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_dir_exists__success() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let config_dir_exists = cm.config_dir_exists();
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_dir_exists__failure() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         let config_dir_exists = cm.config_dir_exists();
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_read__success() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         let mut file =
             fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_read__file_is_empty__failure() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_read__file_does_not_exist__failure() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let actual = cm.config_read(ConfigType::Repo).map_err(|e| e.kind());
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     fn test_config_manager__config_write__config_file_does_not_already_exist__success() -> TestResult
     {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_write__config_file_already_exists__success() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
@@ -294,7 +294,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_rm__success() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_config_manager__config_rm__file_does_not_exist__failure() -> TestResult {
-        let cm = ConfigManager {};
+        let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let actual = cm.config_rm(ConfigType::Repo).map_err(|e| e.kind());

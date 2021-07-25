@@ -190,10 +190,9 @@ where
 
     fn setup_branch_name(&mut self) -> io::Result<()> {
         self.printer
-            .input_header("Name of branch (default: master)")?;
+            .input_header(format!("Name of branch (default: {})", BRANCH_NAME_DEFAULT).as_str())?;
         let mut branch_name = self.reader.read_input()?;
 
-        // Default to "master"
         if branch_name.is_empty() {
             branch_name = BRANCH_NAME_DEFAULT.to_string();
         }
