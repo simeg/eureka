@@ -12,6 +12,7 @@ use eureka::printer::Printer;
 use eureka::program_access::ProgramAccess;
 use eureka::reader::Reader;
 use eureka::{Eureka, EurekaOptions};
+use log::error;
 
 enum CliFlag {
     ClearBranch,
@@ -76,6 +77,6 @@ fn main() {
 
     match eureka.run(opts) {
         Ok(_) => {}
-        Err(e) => panic!("{}", e),
+        Err(e) => error!("{}", e),
     }
 }
