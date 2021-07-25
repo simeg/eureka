@@ -5,9 +5,6 @@ extern crate termcolor;
 
 use std::io;
 
-use clap::{App, Arg, ArgMatches};
-use termcolor::{ColorChoice, StandardStream};
-
 use crate::CliFlag::*;
 use eureka::config_manager::ConfigManager;
 use eureka::git::Git;
@@ -37,22 +34,22 @@ impl CliFlag {
 fn main() {
     pretty_env_logger::init();
 
-    let cli_flags: ArgMatches = App::new("eureka")
+    let cli_flags = clap::App::new("eureka")
         .author(crate_authors!())
         .version(crate_version!())
         .about("Input and store your ideas without leaving the terminal")
         .arg(
-            Arg::with_name(ClearRepo.value())
+            clap::Arg::with_name(ClearRepo.value())
                 .long(ClearRepo.value())
                 .help("Clear the stored path to your idea repo"),
         )
         .arg(
-            Arg::with_name(ClearBranch.value())
+            clap::Arg::with_name(ClearBranch.value())
                 .long(ClearBranch.value())
                 .help("Clear the stored branch name"),
         )
         .arg(
-            Arg::with_name(View.value())
+            clap::Arg::with_name(View.value())
                 .long(View.value())
                 .short(ShortView.value())
                 .help("View ideas with your $PAGER env variable. If unset use less"),
@@ -61,7 +58,7 @@ fn main() {
 
     let stdio = io::stdin();
     let input = stdio.lock();
-    let output = StandardStream::stdout(ColorChoice::AlwaysAnsi);
+    let output = termcolor::StandardStream::stdout(termcolor::ColorChoice::Always);
 
     let mut eureka = Eureka::new(
         ConfigManager::default(),
