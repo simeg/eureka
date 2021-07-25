@@ -22,14 +22,15 @@ impl<R: io::BufRead> ReadInput for Reader<R> {
     }
 }
 
+#[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
     use crate::reader::{ReadInput, Reader};
 
     #[test]
-    fn test_reader_works() {
+    fn test_reader__read_input__success() {
         let input = b"  my input with whitespace chars  ";
-        let mut reader = Reader { reader: &input[..] };
+        let mut reader = Reader::new(&input[..]);
 
         let actual = reader.read_input().unwrap();
         let expected = "my input with whitespace chars".to_string();
