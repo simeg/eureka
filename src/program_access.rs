@@ -45,14 +45,14 @@ impl ProgramAccess {
 #[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
-    use crate::program_access::ProgramAccess;
+    use crate::program_access::{ProgramAccess, ProgramOpener};
     use std::env;
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     #[test]
     fn test_program_access__get_if_available__success() {
-        let program_access = ProgramAccess {};
+        let program_access = ProgramAccess::default();
 
         let actual = program_access.get_if_available("echo");
 
@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_program_access__get_if_available__failure() {
-        let program_access = ProgramAccess {};
+        let program_access = ProgramAccess::default();
 
         let actual = program_access.get_if_available("some-non-existing-program");
 
@@ -69,34 +69,59 @@ mod tests {
     }
 
     #[test]
-    fn test_program_access__open_with_fallback() -> TestResult {
-        let program_access = ProgramAccess {};
+    fn test_program_access__open_with_fallback__success() -> TestResult {
+        let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         env::set_var("READER_ENV_VAR", "echo");
 
-        let actual = program_access.open_with_fallback(
+        program_access.open_with_fallback(
             file_path,
             "READER_ENV_VAR",
             "some-non-existing-program",
-        );
+        )?;
 
         env::remove_var("READER_ENV_VARIABLE");
-
-        assert!(actual.is_ok());
         Ok(())
     }
 
     #[test]
     fn test_program_access__open_with_fallback__uses_fallback() -> TestResult {
-        let program_access = ProgramAccess {};
+        let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         env::remove_var("THIS_ENV_VAR");
 
-        let actual = program_access.open_with_fallback(file_path, "THIS_ENV_VAR", "echo");
+        program_access.open_with_fallback(file_path, "THIS_ENV_VAR", "echo")?;
 
-        assert!(actual.is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn test_program_access__open_editor__success() -> TestResult {
+        let program_access = ProgramAccess::default();
+        let tmp_file = tempfile::NamedTempFile::new()?;
+        let file_path = tmp_file.path().to_str().unwrap();
+        let editor_value = env::var("EDITOR").unwrap();
+        env::set_var("EDITOR", "echo");
+
+        program_access.open_editor(file_path)?;
+
+        env::set_var("EDITOR", editor_value);
+        Ok(())
+    }
+
+    #[test]
+    fn test_program_access__open_pager__success() -> TestResult {
+        let program_access = ProgramAccess::default();
+        let tmp_file = tempfile::NamedTempFile::new()?;
+        let file_path = tmp_file.path().to_str().unwrap();
+        let pager_value = env::var("PAGER").unwrap();
+        env::set_var("PAGER", "echo");
+
+        program_access.open_pager(file_path)?;
+
+        env::set_var("PAGER", pager_value);
         Ok(())
     }
 }
