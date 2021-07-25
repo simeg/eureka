@@ -146,8 +146,8 @@ where
     })
 }
 
-#[cfg(test)]
 #[allow(non_snake_case)]
+#[cfg(test)]
 mod tests {
     use crate::git::{find_last_commit, Git, GitManagement};
     use git2::{BranchType, Repository, RepositoryInitOptions, Status};
