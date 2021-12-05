@@ -375,7 +375,7 @@ mod tests {
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
 
                 Ok(())
@@ -420,7 +420,7 @@ mod tests {
     }
 
     #[test]
-    fn test_setup_defaults_to_master_branch() {
+    fn test_setup_defaults_to_main_branch() {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
         static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -441,7 +441,7 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Branch => assert_eq!(value, "master"),
+                    ConfigType::Branch => assert_eq!(value, "main"),
                     ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
@@ -476,7 +476,7 @@ mod tests {
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
 
                 Ok(())
@@ -497,7 +497,7 @@ mod tests {
                     Ok(String::from("specific-repo-path"))
                 } else {
                     // Branch
-                    // Leave empty to default to "master"
+                    // Leave empty to default to "main"
                     Ok(String::new())
                 }
             }
@@ -578,7 +578,7 @@ mod tests {
                 if counter <= 5 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
                 Ok(())
             }
@@ -682,7 +682,7 @@ mod tests {
                 if counter <= 5 {
                     assert_eq!(value, ">> Idea summary");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
                 Ok(())
             }

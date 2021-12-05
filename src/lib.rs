@@ -46,7 +46,7 @@ pub struct EurekaOptions {
     pub view: bool,
 }
 
-const BRANCH_NAME_DEFAULT: &str = "master";
+const BRANCH_NAME_DEFAULT: &str = "main";
 
 impl<CM, W, R, G, PO> Eureka<CM, W, R, G, PO>
 where
