@@ -17,13 +17,8 @@ pub trait ConfigManagement {
     fn config_rm(&self, config_type: ConfigType) -> io::Result<()>;
 }
 
+#[derive(Default)]
 pub struct ConfigManager;
-
-impl Default for ConfigManager {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl ConfigManagement for ConfigManager {
     fn config_dir_create(&self) -> io::Result<()> {

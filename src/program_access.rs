@@ -8,21 +8,16 @@ pub trait ProgramOpener {
     fn open_pager(&self, file_path: &str) -> io::Result<()>;
 }
 
+#[derive(Default)]
 pub struct ProgramAccess;
-
-impl Default for ProgramAccess {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl ProgramOpener for ProgramAccess {
     fn open_editor(&self, file_path: &str) -> io::Result<()> {
-        self.open_with_fallback(&file_path, "EDITOR", "vi")
+        self.open_with_fallback(file_path, "EDITOR", "vi")
     }
 
     fn open_pager(&self, file_path: &str) -> io::Result<()> {
-        self.open_with_fallback(&file_path, "PAGER", "less")
+        self.open_with_fallback(file_path, "PAGER", "less")
     }
 }
 

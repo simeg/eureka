@@ -8,14 +8,9 @@ pub trait GitManagement {
     fn push(&self, branch_name: &str) -> Result<(), git2::Error>;
 }
 
+#[derive(Default)]
 pub struct Git {
     repo: Option<git2::Repository>,
-}
-
-impl Default for Git {
-    fn default() -> Self {
-        Self { repo: None }
-    }
 }
 
 impl GitManagement for Git {
@@ -71,7 +66,7 @@ impl GitManagement for Git {
             Some("HEAD"),      // point HEAD to our new commit
             &signature,        // author
             &signature,        // committer
-            &subject,          // commit message
+            subject,           // commit message
             &tree,             // tree
             &[&parent_commit], // parent commit
         )
