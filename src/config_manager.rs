@@ -1,6 +1,8 @@
 use crate::dirs::home_dir;
 
+use std::env::var;
 use std::io::{ErrorKind, Read, Write};
+use std::path::PathBuf;
 use std::{fs, io, path};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -80,13 +82,20 @@ impl ConfigManager {
 
     fn config_dir_path(&self) -> io::Result<String> {
         home_dir()
-            .map(|home| format!("{}/{}", home.display(), ".eureka"))
+            .map(|home| self.resolve_xdg_config_home(home))
             .ok_or_else(|| {
                 io::Error::new(
                     ErrorKind::NotFound,
                     "Could not resolve your $HOME directory",
                 )
             })
+    }
+
+    fn resolve_xdg_config_home(&self, home: PathBuf) -> String {
+        match var("XDG_CONFIG_HOME") {
+            Ok(path) => format!("{}/eureka", path),
+            Err(_) => format!("{}/.config/eureka", home.display()),
+        }
     }
 }
 
@@ -109,7 +118,8 @@ mod tests {
         let actual = cm.config_dir_path().unwrap();
         let expected = tmp_dir
             .path()
-            .join(".eureka")
+            .join(".config")
+            .join("eureka")
             .into_os_string()
             .into_string()
             .unwrap();
@@ -128,12 +138,36 @@ mod tests {
         let actual = cm.config_path_for(ConfigType::Repo).unwrap();
         let expected = tmp_dir
             .path()
-            .join(".eureka/repo_path")
+            .join(".config")
+            .join("eureka")
+            .join("repo_path")
             .into_os_string()
             .into_string()
             .unwrap();
 
         env::remove_var("HOME");
+
+        assert_eq!(actual, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_manager__config_dir_for__when_xdg_config_home_env_var_set() -> TestResult {
+        use std::path::Path;
+
+        let cm = ConfigManager::default();
+        env::set_var("XDG_CONFIG_HOME", "specific-path/.config");
+
+        let actual = cm.config_path_for(ConfigType::Repo).unwrap();
+        let expected = Path::new("specific-path")
+            .join(".config")
+            .join("eureka")
+            .join("repo_path")
+            .into_os_string()
+            .into_string()
+            .unwrap();
+
+        env::remove_var("XDG_CONFIG_HOME");
 
         assert_eq!(actual, expected);
         Ok(())
@@ -298,7 +332,7 @@ mod tests {
     fn set_config_dir() -> io::Result<(PathBuf, TempDir)> {
         let tmp_dir = TempDir::new()?;
         // Create the config dir. When tmp_dir is destroyed it will be deleted
-        let config_dir = tmp_dir.path().join(".eureka");
+        let config_dir = tmp_dir.path().join(".config").join("eureka");
 
         env::set_var("HOME", tmp_dir.path());
 
