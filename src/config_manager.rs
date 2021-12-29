@@ -5,7 +5,6 @@ use std::{fs, io, path};
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ConfigType {
-    Branch,
     Repo,
 }
 
@@ -73,7 +72,6 @@ impl ConfigManager {
         let file_name = match config_type {
             // These represents files so underscore is preferred
             ConfigType::Repo => "repo_path",
-            ConfigType::Branch => "branch",
         };
 
         self.config_dir_path()
@@ -112,25 +110,6 @@ mod tests {
         let expected = tmp_dir
             .path()
             .join(".eureka")
-            .into_os_string()
-            .into_string()
-            .unwrap();
-
-        env::remove_var("HOME");
-
-        assert_eq!(actual, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn test_config_manager__config_dir_for__branch() -> TestResult {
-        let cm = ConfigManager::default();
-        let (_config_dir, tmp_dir) = set_config_dir()?;
-
-        let actual = cm.config_path_for(ConfigType::Branch).unwrap();
-        let expected = tmp_dir
-            .path()
-            .join(".eureka/branch")
             .into_os_string()
             .into_string()
             .unwrap();

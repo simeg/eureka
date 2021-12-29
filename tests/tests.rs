@@ -55,115 +55,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: true,
-            clear_branch: false,
-            view: false,
-        };
-
-        let actual = eureka.run(opts);
-
-        assert!(actual.is_ok());
-    }
-
-    #[test]
-    fn test_clear_branch() {
-        struct MockConfigManager;
-
-        impl ConfigManagement for MockConfigManager {
-            fn config_dir_create(&self) -> io::Result<()> {
-                unimplemented!()
-            }
-
-            fn config_dir_exists(&self) -> bool {
-                unimplemented!()
-            }
-
-            fn config_read(&self, file: ConfigType) -> io::Result<String> {
-                assert_eq!(file, ConfigType::Branch);
-                Ok("some-path".to_string())
-            }
-
-            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
-                unimplemented!()
-            }
-
-            fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
-                assert_eq!(config_type, ConfigType::Branch);
-                Ok(())
-            }
-        }
-
-        let mut eureka = Eureka::new(
-            MockConfigManager {},
-            DefaultMockPrinter {},
-            DefaultMockReader {},
-            DefaultGit {},
-            DefaultMockProgramOpener {},
-        );
-        let opts = EurekaOptions {
-            clear_repo: false,
-            clear_branch: true,
-            view: false,
-        };
-
-        let actual = eureka.run(opts);
-
-        assert!(actual.is_ok());
-    }
-
-    #[test]
-    fn test_clear_repo_and_branch() {
-        struct MockConfigManager;
-        static READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
-        static RM_COUNTER: AtomicUsize = AtomicUsize::new(0);
-
-        impl ConfigManagement for MockConfigManager {
-            fn config_dir_create(&self) -> io::Result<()> {
-                unimplemented!()
-            }
-
-            fn config_dir_exists(&self) -> bool {
-                unimplemented!()
-            }
-
-            fn config_read(&self, file: ConfigType) -> io::Result<String> {
-                let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter == 0 {
-                    assert_eq!(file, ConfigType::Repo);
-                } else if counter == 1 {
-                    assert_eq!(file, ConfigType::Branch);
-                } else {
-                    panic!("Should not be read this many times")
-                }
-
-                Ok("some-path".to_string())
-            }
-
-            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
-                unimplemented!()
-            }
-
-            fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
-                let counter = RM_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter == 0 {
-                    assert_eq!(config_type, ConfigType::Repo);
-                } else if counter == 1 {
-                    assert_eq!(config_type, ConfigType::Branch);
-                }
-
-                Ok(())
-            }
-        }
-
-        let mut eureka = Eureka::new(
-            MockConfigManager {},
-            DefaultMockPrinter {},
-            DefaultMockReader {},
-            DefaultGit {},
-            DefaultMockProgramOpener {},
-        );
-        let opts = EurekaOptions {
-            clear_repo: true,
-            clear_branch: true,
             view: false,
         };
 
@@ -227,7 +118,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: true,
         };
 
@@ -308,14 +198,13 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: false,
         };
 
         let actual = eureka.run(opts);
 
         assert!(actual.is_ok());
-        assert!(counter_equals(3, &READ_COUNTER));
+        assert!(counter_equals(2, &READ_COUNTER));
     }
 
     #[test]
@@ -340,7 +229,6 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Branch => assert_eq!(value, "specific-branch-name"),
                     ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
@@ -375,7 +263,7 @@ mod tests {
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
 
                 Ok(())
@@ -410,7 +298,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: false,
         };
 
@@ -420,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn test_setup_defaults_to_master_branch() {
+    fn test_setup_defaults_to_main_branch() {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
         static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -441,7 +328,6 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Branch => assert_eq!(value, "master"),
                     ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
@@ -476,7 +362,7 @@ mod tests {
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
 
                 Ok(())
@@ -497,7 +383,7 @@ mod tests {
                     Ok(String::from("specific-repo-path"))
                 } else {
                     // Branch
-                    // Leave empty to default to "master"
+                    // Leave empty to default to "main"
                     Ok(String::new())
                 }
             }
@@ -512,7 +398,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: false,
         };
 
@@ -543,7 +428,6 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Branch => assert_eq!(value, "specific-branch-name"),
                     ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
@@ -578,7 +462,7 @@ mod tests {
                 if counter <= 5 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
                 Ok(())
             }
@@ -615,7 +499,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: false,
         };
 
@@ -646,7 +529,6 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Branch => assert_eq!(value, "specific-branch-name"),
                     ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
                 }
                 Ok(())
@@ -682,7 +564,7 @@ mod tests {
                 if counter <= 5 {
                     assert_eq!(value, ">> Idea summary");
                 } else {
-                    assert_eq!(value, "Name of branch (default: master)");
+                    assert_eq!(value, "Name of branch (default: main)");
                 }
                 Ok(())
             }
@@ -753,7 +635,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: false,
         };
 
@@ -779,7 +660,6 @@ mod tests {
 
             fn config_read(&self, file: ConfigType) -> io::Result<String> {
                 match file {
-                    ConfigType::Branch => Ok("specific-branch".to_string()),
                     ConfigType::Repo => Ok("specific-repo".to_string()),
                 }
             }
@@ -803,10 +683,7 @@ mod tests {
             fn println(&mut self, value: &str) -> io::Result<()> {
                 let counter = PRINT_COUNTER.fetch_add(1, Ordering::SeqCst);
                 match counter {
-                    0 => assert_eq!(
-                        value,
-                        "Adding and committing your new idea to specific-branch.."
-                    ),
+                    0 => assert_eq!(value, "Adding and committing your new idea to main.."),
                     1 => assert_eq!(value, "Added and committed!"),
                     2 => assert_eq!(value, "Pushing your new idea.."),
                     3 => assert_eq!(value, "Pushed!"),
@@ -849,7 +726,7 @@ mod tests {
             }
 
             fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error> {
-                assert_eq!(branch_name, "specific-branch");
+                assert_eq!(branch_name, "main");
                 Ok(())
             }
 
@@ -863,7 +740,7 @@ mod tests {
             }
 
             fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
-                assert_eq!(branch_name, "specific-branch");
+                assert_eq!(branch_name, "main");
                 Ok(())
             }
         }
@@ -890,7 +767,6 @@ mod tests {
         );
         let opts = EurekaOptions {
             clear_repo: false,
-            clear_branch: false,
             view: false,
         };
 
