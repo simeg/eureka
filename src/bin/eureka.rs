@@ -15,7 +15,6 @@ use eureka::{Eureka, EurekaOptions};
 use log::error;
 
 enum CliFlag {
-    ClearBranch,
     ClearRepo,
     ShortView,
     View,
@@ -24,7 +23,6 @@ enum CliFlag {
 impl CliFlag {
     pub fn value(&self) -> &str {
         match *self {
-            CliFlag::ClearBranch => "clear-branch",
             CliFlag::ClearRepo => "clear-repo",
             CliFlag::ShortView => "v",
             CliFlag::View => "view",
@@ -43,11 +41,6 @@ fn main() {
             clap::Arg::with_name(ClearRepo.value())
                 .long(ClearRepo.value())
                 .help("Clear the stored path to your idea repo"),
-        )
-        .arg(
-            clap::Arg::with_name(ClearBranch.value())
-                .long(ClearBranch.value())
-                .help("Clear the stored branch name"),
         )
         .arg(
             clap::Arg::with_name(View.value())
@@ -71,7 +64,6 @@ fn main() {
 
     let opts = EurekaOptions {
         clear_repo: cli_flags.is_present(ClearRepo.value()),
-        clear_branch: cli_flags.is_present(ClearBranch.value()),
         view: cli_flags.is_present(View.value()),
     };
 

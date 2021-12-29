@@ -8,7 +8,7 @@ use std::io;
 use std::io::{Error, ErrorKind};
 
 use crate::config_manager::ConfigManagement;
-use crate::config_manager::ConfigType::{Branch, Repo};
+use crate::config_manager::ConfigType::Repo;
 use crate::git::GitManagement;
 use crate::printer::{Print, PrintColor};
 use crate::program_access::ProgramOpener;
@@ -39,14 +39,9 @@ pub struct EurekaOptions {
     // Clear the stored path to the repo
     pub clear_repo: bool,
 
-    // Clear the stored name of the branch
-    pub clear_branch: bool,
-
     // Open idea document with $PAGER (fall back to `less`)
     pub view: bool,
 }
-
-const BRANCH_NAME_DEFAULT: &str = "master";
 
 impl<CM, W, R, G, PO> Eureka<CM, W, R, G, PO>
 where
@@ -68,17 +63,10 @@ where
 
     pub fn run(&mut self, opts: EurekaOptions) -> io::Result<()> {
         debug!("Running with options: {:?}", &opts);
-        if opts.clear_repo || opts.clear_branch {
-            if opts.clear_repo {
-                self.clear_repo()?;
-                debug!("Cleared repo");
-            }
 
-            if opts.clear_branch {
-                self.clear_branch()?;
-                debug!("Cleared branch");
-            }
-
+        if opts.clear_repo {
+            self.clear_repo()?;
+            debug!("Cleared repo");
             return Ok(());
         }
 
@@ -102,12 +90,6 @@ where
             if self.cm.config_read(Repo).is_err() {
                 self.setup_repo_path()?;
                 debug!("Setup repo path successfully");
-            }
-
-            // If branch name is missing - ask for it
-            if self.cm.config_read(Branch).is_err() {
-                self.setup_branch_name()?;
-                debug!("Setup branch name successfully");
             }
 
             self.printer
@@ -143,25 +125,19 @@ where
             .and_then(|_| self.cm.config_rm(Repo))
     }
 
-    fn clear_branch(&self) -> io::Result<()> {
-        self.cm
-            .config_read(Branch)
-            .and_then(|_| self.cm.config_rm(Branch))
-    }
-
     fn open_idea_file(&self) -> io::Result<()> {
         self.program_opener
             .open_pager(&format!("{}/README.md", self.cm.config_read(Repo)?))
     }
 
     fn git_add_commit_push(&mut self, commit_subject: String) -> io::Result<()> {
-        let branch_name = self.cm.config_read(Branch)?;
+        let branch_name = "main";
         self.printer.println(&format!(
             "Adding and committing your new idea to {}..",
             &branch_name
         ))?;
         self.git
-            .checkout_branch(branch_name.as_str())
+            .checkout_branch(branch_name)
             .and_then(|_| self.git.add())
             .and_then(|_| self.git.commit(commit_subject.as_str()))
             .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
@@ -169,7 +145,7 @@ where
 
         self.printer.println("Pushing your new idea..")?;
         self.git
-            .push(branch_name.as_str())
+            .push(branch_name)
             .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
         self.printer.println("Pushed!")?;
 
@@ -188,19 +164,7 @@ where
         self.cm.config_write(Repo, input_repo_path)
     }
 
-    fn setup_branch_name(&mut self) -> io::Result<()> {
-        self.printer
-            .input_header(format!("Name of branch (default: {})", BRANCH_NAME_DEFAULT).as_str())?;
-        let mut branch_name = self.reader.read_input()?;
-
-        if branch_name.is_empty() {
-            branch_name = BRANCH_NAME_DEFAULT.to_string();
-        }
-
-        self.cm.config_write(Branch, branch_name)
-    }
-
     fn is_config_missing(&self) -> bool {
-        self.cm.config_read(Repo).is_err() || self.cm.config_read(Branch).is_err()
+        self.cm.config_read(Repo).is_err()
     }
 }
