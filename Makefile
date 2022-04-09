@@ -9,7 +9,7 @@ check:
 ci: lint clippy check test
 
 clippy:
-	@$(CARGO) clippy --fix --allow-dirty
+	@$(CARGO) clippy --fix --allow-dirty --allow-staged
 
 fmt:
 	@$(CARGO) fmt
