@@ -104,7 +104,7 @@ impl ConfigManager {
 mod tests {
     use crate::config_manager::{ConfigManagement, ConfigManager, ConfigType};
     use std::io::{Read, Write};
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::{env, fs, io, path};
     use tempfile::TempDir;
 
@@ -349,7 +349,7 @@ mod tests {
         Ok((config_dir, tmp_dir))
     }
 
-    fn get_file_contents(config_dir: &PathBuf) -> io::Result<String> {
+    fn get_file_contents(config_dir: &Path) -> io::Result<String> {
         let mut file = fs::File::open(&config_dir.join("repo_path"))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

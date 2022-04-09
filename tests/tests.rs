@@ -8,6 +8,7 @@ mod tests {
     use eureka::git::GitManagement;
     use eureka::program_access::ProgramOpener;
     use git2::Oid;
+    use std::cmp::Ordering as CmpOrdering;
     use std::io;
     use std::io::{Error, ErrorKind};
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -579,13 +580,13 @@ mod tests {
         impl ReadInput for MockReader {
             fn read_input(&mut self) -> io::Result<String> {
                 let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter < 5 {
-                    // Return empty string to prompt it to ask again
-                    Ok(String::new())
-                } else if counter == 5 {
-                    Ok(String::from("specific-idea-summary"))
-                } else {
-                    unimplemented!()
+                match counter.cmp(&5) {
+                    CmpOrdering::Less => {
+                        // Return empty string to prompt it to ask again
+                        Ok(String::new())
+                    }
+                    CmpOrdering::Equal => Ok(String::from("specific-idea-summary")),
+                    CmpOrdering::Greater => unimplemented!(),
                 }
             }
         }
