@@ -154,15 +154,23 @@ where
     }
 
     fn setup_repo_path(&mut self) -> io::Result<()> {
-        let mut input_repo_path = String::new();
-
-        while input_repo_path.is_empty() {
+        loop {
             self.printer
                 .input_header("Absolute path to your idea repo")?;
-            input_repo_path = self.reader.read_input()?;
-        }
+            let user_input = &self.reader.read_input()?;
 
-        self.cm.config_write(Repo, input_repo_path)
+            if user_input.is_empty() {
+                continue;
+            }
+
+            let path = Path::new(user_input);
+
+            if path.is_absolute() {
+                break self.cm.config_write(Repo, path.display().to_string());
+            } else {
+                self.printer.error("Path must be absolute")?;
+            }
+        }
     }
 
     fn is_config_missing(&self) -> bool {
