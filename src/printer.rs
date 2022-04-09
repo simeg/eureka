@@ -9,7 +9,7 @@ pub trait Print {
 pub trait PrintColor {
     fn fts_banner(&mut self) -> io::Result<()>;
     fn input_header(&mut self, value: &str) -> io::Result<()>;
-    fn println_styled(&mut self, value: &str, opts: PrintOptions) -> io::Result<()>;
+    fn error(&mut self, value: &str) -> io::Result<()>;
 }
 
 pub struct Printer<W> {
@@ -75,6 +75,17 @@ to begin writing down ideas.
         self.writer.flush()
     }
 
+    fn error(&mut self, value: &str) -> io::Result<()> {
+        let opts = PrintOptions {
+            color: termcolor::Color::Red,
+            is_bold: false,
+        };
+        self.println_styled(value, opts)?;
+        self.writer.flush()
+    }
+}
+
+impl<W: Write + termcolor::WriteColor> Printer<W> {
     fn println_styled(&mut self, value: &str, opts: PrintOptions) -> io::Result<()> {
         let mut color_spec = termcolor::ColorSpec::new();
         color_spec.set_fg(Some(opts.color)).set_bold(opts.is_bold);
@@ -154,6 +165,19 @@ to begin writing down ideas.";
 
         let actual = String::from_utf8(output.into_inner()).unwrap();
         let expected = "\u{1b}[0m\u{1b}[1m\u{1b}[32msome-value\n\u{1b}[0m> ";
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_printer__error__success() {
+        let mut output = termcolor::Ansi::new(vec![]);
+        let mut printer = Printer::new(&mut output);
+
+        printer.error("some-value").unwrap();
+
+        let actual = String::from_utf8(output.into_inner()).unwrap();
+        let expected = "\u{1b}[0m\u{1b}[31msome-value\n\u{1b}[0m";
 
         assert_eq!(actual, expected);
     }

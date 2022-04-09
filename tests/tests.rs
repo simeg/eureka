@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use eureka::config_manager::{ConfigManagement, ConfigType};
-    use eureka::printer::{Print, PrintColor, PrintOptions};
+    use eureka::printer::{Print, PrintColor};
     use eureka::reader::ReadInput;
     use eureka::{Eureka, EurekaOptions};
 
@@ -185,7 +185,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+            fn error(&mut self, _value: &str) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -209,9 +209,8 @@ mod tests {
     }
 
     #[test]
-    fn test_setup_repo_and_branch() {
+    fn test_setup_repo() {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
-        static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
         struct MockConfigManager;
 
@@ -230,7 +229,7 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Repo => assert_eq!(value, "/absolute/path/to/specific-repo-path"),
                 }
                 Ok(())
             }
@@ -270,7 +269,7 @@ mod tests {
                 Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+            fn error(&mut self, _value: &str) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -279,14 +278,7 @@ mod tests {
 
         impl ReadInput for MockReader {
             fn read_input(&mut self) -> io::Result<String> {
-                let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter == 0 {
-                    // Repo
-                    Ok(String::from("specific-repo-path"))
-                } else {
-                    // Branch
-                    Ok(String::from("specific-branch-name"))
-                }
+                Ok(String::from("/absolute/path/to/specific-repo-path"))
             }
         }
 
@@ -310,7 +302,6 @@ mod tests {
     #[test]
     fn test_setup_defaults_to_main_branch() {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
-        static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
         struct MockConfigManager;
 
@@ -329,7 +320,7 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Repo => assert_eq!(value, "/absolute/path/to/specific-repo-path"),
                 }
                 Ok(())
             }
@@ -369,7 +360,7 @@ mod tests {
                 Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+            fn error(&mut self, _value: &str) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -378,15 +369,7 @@ mod tests {
 
         impl ReadInput for MockReader {
             fn read_input(&mut self) -> io::Result<String> {
-                let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter == 0 {
-                    // Repo
-                    Ok(String::from("specific-repo-path"))
-                } else {
-                    // Branch
-                    // Leave empty to default to "main"
-                    Ok(String::new())
-                }
+                Ok(String::from("/absolute/path/to/specific-repo-path"))
             }
         }
 
@@ -429,7 +412,7 @@ mod tests {
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
-                    ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Repo => assert_eq!(value, "/absolute/path/to/specific-repo-path"),
                 }
                 Ok(())
             }
@@ -460,7 +443,7 @@ mod tests {
 
             fn input_header(&mut self, value: &str) -> io::Result<()> {
                 let counter = INPUT_HEADER_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter <= 5 {
+                if counter <= 10 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
                     assert_eq!(value, "Name of branch (default: main)");
@@ -468,8 +451,9 @@ mod tests {
                 Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
-                unimplemented!()
+            fn error(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "Path must be absolute");
+                Ok(())
             }
         }
 
@@ -481,12 +465,11 @@ mod tests {
                 if counter < 5 {
                     // Return empty string to prompt it to ask again
                     Ok(String::new())
-                } else if counter == 5 {
-                    // Repo
-                    Ok(String::from("specific-repo-path"))
+                } else if counter < 10 {
+                    // Return relative path to prompt it to ask again
+                    Ok(String::from("some-relative-path"))
                 } else {
-                    // Branch
-                    Ok(String::from("specific-branch-name"))
+                    Ok(String::from("/absolute/path/to/specific-repo-path"))
                 }
             }
         }
@@ -570,7 +553,7 @@ mod tests {
                 Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+            fn error(&mut self, _value: &str) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -705,7 +688,7 @@ mod tests {
                 Ok(())
             }
 
-            fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+            fn error(&mut self, _value: &str) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -802,7 +785,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn println_styled(&mut self, _value: &str, _opts: PrintOptions) -> io::Result<()> {
+        fn error(&mut self, _value: &str) -> io::Result<()> {
             unimplemented!()
         }
     }
