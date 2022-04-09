@@ -1,13 +1,7 @@
-.PHONY: build clean check ci clippy fmt install link lint publish test
+.PHONY: check ci clippy fmt install lint publish test
 
 BIN_NAME = eureka
 CARGO = $(shell which cargo)
-
-build:
-	$(CARGO) build
-
-clean:
-	rm -rf ~/.eureka
 
 check:
 	$(CARGO) check --release
@@ -15,7 +9,7 @@ check:
 ci: lint clippy check test
 
 clippy:
-	@$(CARGO) clippy
+	@$(CARGO) clippy --fix --allow-dirty
 
 fmt:
 	@$(CARGO) fmt
@@ -23,12 +17,8 @@ fmt:
 install:
 	@cp ./target/release/$(BIN_NAME) /usr/local/bin/$(BIN_NAME)
 
-link:
-	@ln -sf ./target/debug/$(BIN_NAME) .
-
 lint:
-	@$(CARGO) fmt --all -- --check
-	@echo "Lint OK 👌"
+	@$(CARGO) fmt --all -- --check && echo "Lint OK 👌"
 
 publish:
 	@$(CARGO) publish
