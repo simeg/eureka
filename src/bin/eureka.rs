@@ -5,7 +5,6 @@ extern crate termcolor;
 
 use std::io;
 
-use crate::CliFlag::*;
 use eureka::config_manager::ConfigManager;
 use eureka::git::Git;
 use eureka::printer::Printer;
@@ -14,38 +13,25 @@ use eureka::reader::Reader;
 use eureka::{Eureka, EurekaOptions};
 use log::error;
 
-enum CliFlag {
-    ClearRepo,
-    ShortView,
-    View,
-}
-
-impl CliFlag {
-    pub fn value(&self) -> &str {
-        match *self {
-            CliFlag::ClearRepo => "clear-repo",
-            CliFlag::ShortView => "v",
-            CliFlag::View => "view",
-        }
-    }
-}
+const ARG_CLEAR_REPO: &str = "clear-repo";
+const ARG_VIEW: &str = "view";
 
 fn main() {
     pretty_env_logger::init();
 
-    let cli_flags = clap::App::new("eureka")
+    let cli_flags = clap::Command::new("eureka")
         .author(crate_authors!())
         .version(crate_version!())
         .about("Input and store your ideas without leaving the terminal")
         .arg(
-            clap::Arg::with_name(ClearRepo.value())
-                .long(ClearRepo.value())
+            clap::Arg::new(ARG_CLEAR_REPO)
+                .long(ARG_CLEAR_REPO)
                 .help("Clear the stored path to your idea repo"),
         )
         .arg(
-            clap::Arg::with_name(View.value())
-                .long(View.value())
-                .short(ShortView.value())
+            clap::Arg::new(ARG_VIEW)
+                .long(ARG_VIEW)
+                .short(ARG_VIEW.chars().next().unwrap())
                 .help("View ideas with your $PAGER env variable. If unset use less"),
         )
         .get_matches();
@@ -63,8 +49,8 @@ fn main() {
     );
 
     let opts = EurekaOptions {
-        clear_repo: cli_flags.is_present(ClearRepo.value()),
-        view: cli_flags.is_present(View.value()),
+        clear_repo: cli_flags.is_present(ARG_CLEAR_REPO),
+        view: cli_flags.is_present(ARG_VIEW),
     };
 
     match eureka.run(opts) {
