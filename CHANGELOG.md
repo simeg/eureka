@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 2.0.1
+* Reduce binary size using this guide:
+  https://github.com/johnthagen/min-sized-rust#enable-link-time-optimization-lto
+
 ## Version 2.0.0
 
 This version introduces some breaking changes for _how_ and _where_ configuration is stored, as well as changes the default git branch from `master` to `main`, and making the branch name non-configurable.
