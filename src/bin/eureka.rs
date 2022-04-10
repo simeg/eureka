@@ -13,7 +13,7 @@ use eureka::reader::Reader;
 use eureka::{Eureka, EurekaOptions};
 use log::error;
 
-const ARG_CLEAR_REPO: &str = "clear-repo";
+const ARG_CLEAR_CONFIG: &str = "clear-config";
 const ARG_VIEW: &str = "view";
 
 fn main() {
@@ -24,9 +24,9 @@ fn main() {
         .version(crate_version!())
         .about("Input and store your ideas without leaving the terminal")
         .arg(
-            clap::Arg::new(ARG_CLEAR_REPO)
-                .long(ARG_CLEAR_REPO)
-                .help("Clear the stored path to your idea repo"),
+            clap::Arg::new(ARG_CLEAR_CONFIG)
+                .long(ARG_CLEAR_CONFIG)
+                .help("Clear your stored configuration"),
         )
         .arg(
             clap::Arg::new(ARG_VIEW)
@@ -49,7 +49,7 @@ fn main() {
     );
 
     let opts = EurekaOptions {
-        clear_repo: cli_flags.is_present(ARG_CLEAR_REPO),
+        clear_config: cli_flags.is_present(ARG_CLEAR_CONFIG),
         view: cli_flags.is_present(ARG_VIEW),
     };
 

@@ -14,9 +14,10 @@ mod tests {
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
-    fn test_clear_repo() {
+    fn test_clear_config() {
         struct MockConfigManager;
         static READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
+        static RM_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
         impl ConfigManagement for MockConfigManager {
             fn config_dir_create(&self) -> io::Result<()> {
@@ -41,8 +42,8 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
-                assert_eq!(config_type, ConfigType::Repo);
+            fn config_rm(&self) -> io::Result<()> {
+                RM_COUNTER.fetch_add(1, Ordering::SeqCst);
                 Ok(())
             }
         }
@@ -55,13 +56,16 @@ mod tests {
             DefaultMockProgramOpener {},
         );
         let opts = EurekaOptions {
-            clear_repo: true,
+            clear_config: true,
             view: false,
         };
 
         let actual = eureka.run(opts);
 
         assert!(actual.is_ok());
+
+        let rm_counter = RM_COUNTER.fetch_add(1, Ordering::SeqCst);
+        assert_eq!(rm_counter, 1);
     }
 
     #[test]
@@ -92,7 +96,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 Ok(())
             }
         }
@@ -118,7 +122,7 @@ mod tests {
             MockProgramAccess,
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: true,
         };
 
@@ -157,7 +161,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -198,7 +202,7 @@ mod tests {
             DefaultMockProgramOpener {},
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: false,
         };
 
@@ -234,7 +238,7 @@ mod tests {
                 Ok(())
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -290,7 +294,7 @@ mod tests {
             DefaultMockProgramOpener {},
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: false,
         };
 
@@ -325,7 +329,7 @@ mod tests {
                 Ok(())
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -381,7 +385,7 @@ mod tests {
             DefaultMockProgramOpener {},
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: false,
         };
 
@@ -417,7 +421,7 @@ mod tests {
                 Ok(())
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -482,7 +486,7 @@ mod tests {
             DefaultMockProgramOpener {},
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: false,
         };
 
@@ -518,7 +522,7 @@ mod tests {
                 Ok(())
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -618,7 +622,7 @@ mod tests {
             MockProgramAccess {},
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: false,
         };
 
@@ -652,7 +656,7 @@ mod tests {
                 unimplemented!()
             }
 
-            fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+            fn config_rm(&self) -> io::Result<()> {
                 unimplemented!()
             }
         }
@@ -750,7 +754,7 @@ mod tests {
             MockProgramOpener {},
         );
         let opts = EurekaOptions {
-            clear_repo: false,
+            clear_config: false,
             view: false,
         };
 
@@ -817,7 +821,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn config_rm(&self, _config_type: ConfigType) -> io::Result<()> {
+        fn config_rm(&self) -> io::Result<()> {
             unimplemented!()
         }
     }

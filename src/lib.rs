@@ -36,9 +36,8 @@ pub struct Eureka<
 
 #[derive(Debug)]
 pub struct EurekaOptions {
-    // Clear the stored path to the repo
-    // TODO: Change to "clear_config"
-    pub clear_repo: bool,
+    // Clear the stored config
+    pub clear_config: bool,
 
     // Open idea document with $PAGER (fall back to `less`)
     pub view: bool,
@@ -65,9 +64,9 @@ where
     pub fn run(&mut self, opts: EurekaOptions) -> io::Result<()> {
         debug!("Running with options: {:?}", &opts);
 
-        if opts.clear_repo {
+        if opts.clear_config {
             self.clear_config()?;
-            debug!("Cleared repo");
+            debug!("Cleared config");
             return Ok(());
         }
 
@@ -120,9 +119,8 @@ where
             .and(self.git_add_commit_push(idea_summary))
     }
 
-    // TODO: Change flag to only allow deleting all config
     fn clear_config(&self) -> io::Result<()> {
-        self.cm.config_read(Repo).and_then(|_| self.cm.config_rm())
+        self.cm.config_rm()
     }
 
     fn open_idea_file(&self) -> io::Result<()> {
