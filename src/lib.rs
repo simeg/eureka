@@ -1,8 +1,7 @@
 extern crate dirs;
-extern crate git2;
-extern crate termcolor;
 #[macro_use]
 extern crate log;
+extern crate core;
 
 use std::io;
 use std::io::{Error, ErrorKind};
@@ -38,6 +37,7 @@ pub struct Eureka<
 #[derive(Debug)]
 pub struct EurekaOptions {
     // Clear the stored path to the repo
+    // TODO: Change to "clear_config"
     pub clear_repo: bool,
 
     // Open idea document with $PAGER (fall back to `less`)
@@ -66,7 +66,7 @@ where
         debug!("Running with options: {:?}", &opts);
 
         if opts.clear_repo {
-            self.clear_repo()?;
+            self.clear_config()?;
             debug!("Cleared repo");
             return Ok(());
         }
@@ -116,14 +116,13 @@ where
             .map_err(|git_err| Error::new(ErrorKind::InvalidInput, git_err))?;
 
         self.program_opener
-            .open_editor(&format!("{}/README.md", repo_path))
+            .open_editor(&format!("{}/README.md", &repo_path))
             .and(self.git_add_commit_push(idea_summary))
     }
 
-    fn clear_repo(&self) -> io::Result<()> {
-        self.cm
-            .config_read(Repo)
-            .and_then(|_| self.cm.config_rm(Repo))
+    // TODO: Change flag to only allow deleting all config
+    fn clear_config(&self) -> io::Result<()> {
+        self.cm.config_read(Repo).and_then(|_| self.cm.config_rm())
     }
 
     fn open_idea_file(&self) -> io::Result<()> {
