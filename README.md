@@ -7,8 +7,6 @@ Imagine working on something important and then having an idea. Instead of
 letting your idea slip by you can just type `eureka` and you're able to quickly
 store your idea and then continue working.
 
-**It is developed _by_ and _for_ people who enjoy using the terminal.**
-
 ![demo](assets/demo.gif)
 
 ## Required Setup
@@ -37,10 +35,10 @@ _Rust stable version will always be supported_
 
 ## Usage
 The first time you run `eureka` it will ask for the path to your ideas repo.
-This configuration will be stored in `~/.eureka/`.
+This configuration will be stored in your [XDG Base Directory](https://wiki.archlinux.org/title/XDG_Base_Directory) if found, otherwise in `$HOME/.config/eureka`.
 
 After the setup simply run `eureka` to capture an idea. It will then be 
-committed and pushed to the `origin` remote and the branch name of your choice.
+committed and pushed to the `origin` remote and the `main` branch.
 
 View your stored ideas with the `-v` or `--view` flag.
 
@@ -51,9 +49,8 @@ $ eureka --view
 ### Flags
 
 ```sh
---clear-branch    Clear the stored branch name
---clear-repo      Clear the stored path to your idea repo
--v, --view        View ideas with your $PAGER env variable. If unset use less
+    --clear-config    Clear your stored configuration
+-v, --view            View ideas with your $PAGER env variable. If unset use less
 ```
 
 ### Recommended alias
@@ -69,16 +66,6 @@ echo 'alias idea="eureka"' >> ~/.zshrc
 ```sh
 echo 'alias idea="eureka"' >> ~/.bashrc
 ```
-
-## Development
-
-This repo uses a Makefile as an interface for common operations.
-
-1) Do code changes
-2) Run `make build link` to build the project and create a symlink from the built binary to the root
-   of the project
-3) Run `./eureka` to execute the binary with your changes
-4) Profit :star:
 
 ## Improvements
 See [github issues](https://github.com/simeg/eureka/issues).
