@@ -3,7 +3,16 @@ use crate::dirs::home_dir;
 use std::env::var;
 use std::io::{ErrorKind, Read, Write};
 use std::path::PathBuf;
-use std::{fs, io, path};
+use std::{fs, io};
+
+use serde::{Deserialize, Serialize};
+
+const CONFIG_FILE_NAME: &str = "config.json";
+
+#[derive(Serialize, Deserialize, Default)]
+struct Config {
+    repo: PathBuf,
+}
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ConfigType {
@@ -15,7 +24,7 @@ pub trait ConfigManagement {
     fn config_dir_exists(&self) -> bool;
     fn config_read(&self, config_type: ConfigType) -> io::Result<String>;
     fn config_write(&self, config_type: ConfigType, value: String) -> io::Result<()>;
-    fn config_rm(&self, config_type: ConfigType) -> io::Result<()>;
+    fn config_rm(&self) -> io::Result<()>;
 }
 
 #[derive(Default)]
@@ -31,38 +40,31 @@ impl ConfigManagement for ConfigManager {
     }
 
     fn config_read(&self, config_type: ConfigType) -> io::Result<String> {
-        let config_path = self.config_path_for(config_type)?;
-        // Make sure file exists
-        fs::metadata(&config_path)?;
-
-        let mut file = fs::File::open(&config_path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-
-        if contents.is_empty() {
-            return Err(io::Error::new(
-                ErrorKind::NotFound,
-                format!("File is empty: {}", &config_path),
-            ));
-        } else if contents.ends_with('\n') {
-            contents.pop().ok_or_else(|| {
-                io::Error::new(ErrorKind::Other, "Unable to remove last char from file")
-            })?;
-        }
-
-        Ok(contents)
+        let config = self.config()?;
+        let config_value = match config_type {
+            ConfigType::Repo => config.repo.display().to_string(),
+        };
+        Ok(config_value)
     }
 
     fn config_write(&self, config_type: ConfigType, value: String) -> io::Result<()> {
-        let config_path = self.config_path_for(config_type)?;
+        let config_path = self.config_path()?;
 
         // Create file if it doesn't exist, otherwise get it
-        let mut file = fs::File::create(&path::Path::new(config_path.as_str()))?;
-        file.write_all(value.as_bytes())
+        let mut file = fs::File::create(config_path)?;
+
+        let mut config = self.config()?;
+        match config_type {
+            ConfigType::Repo => config.repo = PathBuf::from(value),
+        }
+
+        let json = serde_json::to_string(&config)?;
+
+        file.write_all(json.as_bytes())
     }
 
-    fn config_rm(&self, config_type: ConfigType) -> io::Result<()> {
-        let config_path = self.config_path_for(config_type)?;
+    fn config_rm(&self) -> io::Result<()> {
+        let config_path = self.config_path()?;
         // Make sure file exists
         fs::metadata(&config_path)?;
         fs::remove_file(&config_path)
@@ -70,19 +72,13 @@ impl ConfigManagement for ConfigManager {
 }
 
 impl ConfigManager {
-    fn config_path_for(&self, config_type: ConfigType) -> io::Result<String> {
-        let file_name = match config_type {
-            // These represents files so underscore is preferred
-            ConfigType::Repo => "repo_path",
-        };
-
-        self.config_dir_path()
-            .map(|path| format!("{}/{}", path, file_name))
+    fn config_path(&self) -> io::Result<PathBuf> {
+        Ok(self.config_dir_path()?.join(CONFIG_FILE_NAME))
     }
 
-    fn config_dir_path(&self) -> io::Result<String> {
-        home_dir()
-            .map(|home| self.resolve_xdg_config_home(home))
+    fn config_dir_path(&self) -> io::Result<PathBuf> {
+        self.resolve_xdg_config_home()
+            .or_else(|| Some(home_dir().unwrap().join(".config").join("eureka")))
             .ok_or_else(|| {
                 io::Error::new(
                     ErrorKind::NotFound,
@@ -91,10 +87,26 @@ impl ConfigManager {
             })
     }
 
-    fn resolve_xdg_config_home(&self, home: PathBuf) -> String {
+    fn config(&self) -> io::Result<Config> {
+        let config_file = self.config_path()?;
+        // Make sure file exists
+        fs::metadata(&config_file)?;
+
+        let mut file = fs::File::open(&config_file)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+
+        if contents.is_empty() {
+            return Ok(Config::default());
+        }
+
+        Ok(serde_json::from_str(&contents)?)
+    }
+
+    fn resolve_xdg_config_home(&self) -> Option<PathBuf> {
         match var("XDG_CONFIG_HOME") {
-            Ok(path) => format!("{}/eureka", path),
-            Err(_) => format!("{}/.config/eureka", home.display()),
+            Ok(path) => Some(PathBuf::from(path).join("eureka")),
+            Err(_) => None,
         }
     }
 }
@@ -115,14 +127,8 @@ mod tests {
         let cm = ConfigManager::default();
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
-        let actual = cm.config_dir_path().unwrap();
-        let expected = tmp_dir
-            .path()
-            .join(".config")
-            .join("eureka")
-            .into_os_string()
-            .into_string()
-            .unwrap();
+        let actual = cm.config_dir_path()?;
+        let expected = tmp_dir.path().join(".config").join("eureka");
 
         env::remove_var("HOME");
 
@@ -131,43 +137,21 @@ mod tests {
     }
 
     #[test]
-    fn test_config_manager__config_dir_for__repo() -> TestResult {
-        let cm = ConfigManager::default();
-        let (_config_dir, tmp_dir) = set_config_dir()?;
-
-        let actual = cm.config_path_for(ConfigType::Repo).unwrap();
-        let expected = tmp_dir
-            .path()
-            .join(".config")
-            .join("eureka")
-            .join("repo_path")
-            .into_os_string()
-            .into_string()
-            .unwrap();
-
-        env::remove_var("HOME");
-
-        assert_eq!(actual, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn test_config_manager__config_dir_for__when_xdg_config_home_env_var_set() -> TestResult {
+    fn test_config_manager__config_dir_path__when__xdg_config_home_env_var_set() -> TestResult {
         use std::path::Path;
 
         let cm = ConfigManager::default();
-        env::set_var("XDG_CONFIG_HOME", "specific-path/.config");
+        env::set_var("XDG_CONFIG_HOME", "/specific-path/.config");
+        assert_eq!(
+            env::var("XDG_CONFIG_HOME"),
+            Ok(String::from("/specific-path/.config"))
+        );
 
-        let actual = cm.config_path_for(ConfigType::Repo).unwrap();
-        let expected = Path::new("specific-path")
-            .join(".config")
-            .join("eureka")
-            .join("repo_path")
-            .into_os_string()
-            .into_string()
-            .unwrap();
+        let actual = cm.config_dir_path()?;
+        let expected = Path::new("/specific-path").join(".config").join("eureka");
 
         env::remove_var("XDG_CONFIG_HOME");
+        assert!(env::var("XDG_CONFIG_HOME").is_err());
 
         assert_eq!(actual, expected);
         Ok(())
@@ -216,9 +200,10 @@ mod tests {
     fn test_config_manager__config_read__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
-        let mut file =
-            fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
-        file.write_all("this-repo-path-value".as_bytes())?;
+        let mut file = fs::File::create(&path::Path::new(
+            &config_dir.join("config.json").as_os_str(),
+        ))?;
+        file.write_all("{\"repo\": \"this-repo-path-value\"}".as_bytes())?;
 
         let actual = cm.config_read(ConfigType::Repo)?;
         let expected = "this-repo-path-value";
@@ -230,14 +215,16 @@ mod tests {
     }
 
     #[test]
-    fn test_config_manager__config_read__file_is_empty__failure() -> TestResult {
+    fn test_config_manager__config_read__file_is_empty__default_config() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
-        let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
+        let _file = fs::File::create(&path::Path::new(
+            &config_dir.join("config.json").as_os_str(),
+        ))?;
 
-        let actual = cm.config_read(ConfigType::Repo).map_err(|e| e.kind());
-        let expected = Err(io::ErrorKind::NotFound);
+        let actual = cm.config_read(ConfigType::Repo)?;
+        let expected = String::from("");
 
         env::remove_var("HOME");
 
@@ -246,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn test_config_manager__config_read__file_does_not_exist__failure() -> TestResult {
+    fn test_config_manager__config_read__when__file_does_not_exist__failure() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
@@ -273,8 +260,9 @@ mod tests {
 
         // Assert file contents
         let contents = get_file_contents(&config_dir)?;
+        let expected = "{\"repo\":\"this-specific-value\"}";
 
-        assert_eq!(contents, "this-specific-value");
+        assert_eq!(contents, expected);
         Ok(())
     }
 
@@ -283,7 +271,9 @@ mod tests {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
-        let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
+        let _file = fs::File::create(&path::Path::new(
+            &config_dir.join("config.json").as_os_str(),
+        ))?;
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
 
@@ -292,11 +282,13 @@ mod tests {
         assert!(write_result.is_ok());
 
         // Assert file contents
-        let mut file = fs::File::open(&config_dir.join("repo_path"))?;
+        let mut file = fs::File::open(&config_dir.join("config.json"))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
 
-        assert_eq!(contents, "this-specific-value");
+        let expected = "{\"repo\":\"this-specific-value\"}";
+
+        assert_eq!(contents, expected);
         Ok(())
     }
 
@@ -305,9 +297,11 @@ mod tests {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
-        let _file = fs::File::create(&path::Path::new(&config_dir.join("repo_path").as_os_str()))?;
+        let _file = fs::File::create(&path::Path::new(
+            &config_dir.join("config.json").as_os_str(),
+        ))?;
 
-        let actual = cm.config_rm(ConfigType::Repo);
+        let actual = cm.config_rm();
 
         env::remove_var("HOME");
 
@@ -320,7 +314,7 @@ mod tests {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
-        let actual = cm.config_rm(ConfigType::Repo).map_err(|e| e.kind());
+        let actual = cm.config_rm().map_err(|e| e.kind());
         let expected = Err(io::ErrorKind::NotFound);
 
         env::remove_var("HOME");
@@ -334,7 +328,11 @@ mod tests {
         // Create the config dir. When tmp_dir is destroyed it will be deleted
         let config_dir = tmp_dir.path().join(".config").join("eureka");
 
-        env::set_var("HOME", tmp_dir.path());
+        env::set_var("HOME", &tmp_dir.path());
+        assert_eq!(
+            env::var("HOME"),
+            Ok(tmp_dir.path().to_str().unwrap().to_string())
+        );
 
         // tmp_dir cannot be destroyed yet, so return it
         Ok((config_dir, tmp_dir))
@@ -350,7 +348,7 @@ mod tests {
     }
 
     fn get_file_contents(config_dir: &Path) -> io::Result<String> {
-        let mut file = fs::File::open(&config_dir.join("repo_path"))?;
+        let mut file = fs::File::open(&config_dir.join("config.json"))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         Ok(contents)
