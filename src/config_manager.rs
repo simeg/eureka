@@ -127,6 +127,10 @@ mod tests {
         let cm = ConfigManager::default();
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
+        // XDG_CONFIG_HOME is set in Github Actions so let's unset it
+        env::remove_var("XDG_CONFIG_HOME");
+        assert!(env::var("XDG_CONFIG_HOME").is_err());
+
         let actual = cm.config_dir_path()?;
         let expected = tmp_dir.path().join(".config").join("eureka");
 
@@ -187,6 +191,10 @@ mod tests {
     fn test_config_manager__config_dir_exists__failure() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_config_dir()?;
+
+        // XDG_CONFIG_HOME is set in Github Actions so let's unset it
+        env::remove_var("XDG_CONFIG_HOME");
+        assert!(env::var("XDG_CONFIG_HOME").is_err());
 
         let config_dir_exists = cm.config_dir_exists();
 
