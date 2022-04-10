@@ -1,5 +1,22 @@
 # Changelog
 
+## Version 2.0.0
+
+This version introduces some breaking changes for _how_ and _where_ configuration is stored, as well as changes the default git branch from `master` to `main`, and making the branch name non-configurable.
+
+⚠️ **Breaking changes** ⚠️
+* Config is now stored as JSON
+* Config is now stored at `$XDG_CONFIG_HOME`, if unset use `$HOME/.config/eureka`. This is more
+  inline with where config should be stored
+* `main` branch is used by default, and you can't config the branch name anymore. Use `git checkout main` to create a new branch based on our current one.
+
+Just update and run it to go through the first time setup again.
+
+**Other changes**
+* Only allow absolute path for repo
+* Only allow to clear entire config instead of just repo (`--clear-config`)
+* Dependency and docs updates
+
 ## Version 1.8.1
 * Bugfix: Commit and push to stored branch name
 

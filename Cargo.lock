@@ -106,7 +106,7 @@ dependencies = [
 
 [[package]]
 name = "eureka"
-version = "1.8.1"
+version = "2.0.0"
 dependencies = [
  "clap",
  "dirs",
