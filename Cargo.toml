@@ -1,6 +1,6 @@
 [package]
 name = "eureka"
-version = "1.8.1"
+version = "2.0.0"
 description = "CLI tool to input and store your ideas without leaving the terminal"
 authors = ["Simon Egersand <s.egersand@gmail.com>"]
 categories = ["command-line-interface", "command-line-utilities"]
