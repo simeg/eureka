@@ -67,5 +67,10 @@ echo 'alias idea="eureka"' >> ~/.zshrc
 echo 'alias idea="eureka"' >> ~/.bashrc
 ```
 
+**Fish**
+```sh
+echo 'alias idea="eureka"' >> ~/.config/fish/config.fish
+```
+
 ## Improvements
 See [github issues](https://github.com/simeg/eureka/issues).
