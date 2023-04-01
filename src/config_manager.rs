@@ -208,9 +208,8 @@ mod tests {
     fn test_config_manager__config_read__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
-        let mut file = fs::File::create(&path::Path::new(
-            &config_dir.join("config.json").as_os_str(),
-        ))?;
+        let mut file =
+            fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
         file.write_all("{\"repo\": \"this-repo-path-value\"}".as_bytes())?;
 
         let actual = cm.config_read(ConfigType::Repo)?;
@@ -227,9 +226,7 @@ mod tests {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
-        let _file = fs::File::create(&path::Path::new(
-            &config_dir.join("config.json").as_os_str(),
-        ))?;
+        let _file = fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
 
         let actual = cm.config_read(ConfigType::Repo)?;
         let expected = String::from("");
@@ -279,9 +276,7 @@ mod tests {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
-        let _file = fs::File::create(&path::Path::new(
-            &config_dir.join("config.json").as_os_str(),
-        ))?;
+        let _file = fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
 
@@ -290,7 +285,7 @@ mod tests {
         assert!(write_result.is_ok());
 
         // Assert file contents
-        let mut file = fs::File::open(&config_dir.join("config.json"))?;
+        let mut file = fs::File::open(config_dir.join("config.json"))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
 
@@ -305,9 +300,7 @@ mod tests {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
-        let _file = fs::File::create(&path::Path::new(
-            &config_dir.join("config.json").as_os_str(),
-        ))?;
+        let _file = fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
 
         let actual = cm.config_rm();
 
@@ -336,7 +329,7 @@ mod tests {
         // Create the config dir. When tmp_dir is destroyed it will be deleted
         let config_dir = tmp_dir.path().join(".config").join("eureka");
 
-        env::set_var("HOME", &tmp_dir.path());
+        env::set_var("HOME", tmp_dir.path());
         assert_eq!(
             env::var("HOME"),
             Ok(tmp_dir.path().to_str().unwrap().to_string())
@@ -356,7 +349,7 @@ mod tests {
     }
 
     fn get_file_contents(config_dir: &Path) -> io::Result<String> {
-        let mut file = fs::File::open(&config_dir.join("config.json"))?;
+        let mut file = fs::File::open(config_dir.join("config.json"))?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         Ok(contents)

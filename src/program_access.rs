@@ -28,8 +28,8 @@ impl ProgramAccess {
             .or_else(|_| self.get_if_available(fallback))?;
 
         // Make sure file exists
-        fs::metadata(&file_path)?;
-        Command::new(&program).arg(&file_path).status().map(|_| ())
+        fs::metadata(file_path)?;
+        Command::new(program).arg(file_path).status().map(|_| ())
     }
 
     fn get_if_available(&self, program: &str) -> io::Result<PathBuf> {

@@ -3,6 +3,7 @@ extern crate clap;
 extern crate pretty_env_logger;
 extern crate termcolor;
 
+use clap::ArgAction;
 use std::io;
 
 use eureka::config_manager::ConfigManager;
@@ -26,12 +27,14 @@ fn main() {
         .arg(
             clap::Arg::new(ARG_CLEAR_CONFIG)
                 .long(ARG_CLEAR_CONFIG)
+                .action(ArgAction::SetTrue)
                 .help("Clear your stored configuration"),
         )
         .arg(
             clap::Arg::new(ARG_VIEW)
                 .long(ARG_VIEW)
                 .short(ARG_VIEW.chars().next().unwrap())
+                .action(ArgAction::SetTrue)
                 .help("View ideas with your $PAGER env variable. If unset use less"),
         )
         .get_matches();
@@ -49,8 +52,8 @@ fn main() {
     );
 
     let opts = EurekaOptions {
-        clear_config: cli_flags.is_present(ARG_CLEAR_CONFIG),
-        view: cli_flags.is_present(ARG_VIEW),
+        clear_config: cli_flags.get_flag(ARG_CLEAR_CONFIG),
+        view: cli_flags.get_flag(ARG_VIEW),
     };
 
     match eureka.run(opts) {
