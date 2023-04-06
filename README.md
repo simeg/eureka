@@ -31,6 +31,10 @@ $ brew install eureka
 $ cargo install eureka
 ```
 
+**[Arch Linux](https://aur.archlinux.org/packages/eureka-notes)**
+
+Install the [AUR Package](https://aur.archlinux.org/packages/eureka-notes), for more information see the [ArchWiki](https://wiki.archlinux.org/title/Eureka)
+
 _Rust stable version will always be supported_
 
 ## Usage
