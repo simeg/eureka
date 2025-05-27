@@ -6,7 +6,7 @@ extern crate termcolor;
 use clap::ArgAction;
 use std::io;
 
-use eureka::config_manager::ConfigManager;
+use eureka::config_manager::{ConfigManagement, ConfigManager, ConfigType};
 use eureka::git::Git;
 use eureka::printer::Printer;
 use eureka::program_access::ProgramAccess;
@@ -43,11 +43,14 @@ fn main() {
     let input = stdio.lock();
     let output = termcolor::StandardStream::stdout(termcolor::ColorChoice::Always);
 
+    let config = ConfigManager::default();
+    let ssh_key = config.config_read(ConfigType::SshKey).unwrap_or_default();
+
     let mut eureka = Eureka::new(
         ConfigManager::default(),
         Printer::new(output),
         Reader::new(input),
-        Git::default(),
+        Git::new(&ssh_key),
         ProgramAccess::default(),
     );
 

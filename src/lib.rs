@@ -6,8 +6,10 @@ extern crate core;
 use std::io;
 use std::io::{Error, ErrorKind};
 
-use crate::config_manager::ConfigManagement;
-use crate::config_manager::ConfigType::Repo;
+use crate::config_manager::{
+    ConfigManagement,
+    ConfigType::{Repo, SshKey},
+};
 use crate::git::GitManagement;
 use crate::printer::{Print, PrintColor};
 use crate::program_access::ProgramOpener;
@@ -90,6 +92,8 @@ where
             if self.cm.config_read(Repo).is_err() {
                 self.setup_repo_path()?;
                 debug!("Setup repo path successfully");
+                self.setup_ssh_key()?;
+                debug!("Setup ssh_key path successfully");
             }
 
             self.printer
@@ -138,13 +142,11 @@ where
             .checkout_branch(branch_name)
             .and_then(|_| self.git.add())
             .and_then(|_| self.git.commit(commit_subject.as_str()))
-            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+            .map_err(io::Error::other)?;
         self.printer.println("Added and committed!")?;
 
         self.printer.println("Pushing your new idea..")?;
-        self.git
-            .push(branch_name)
-            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+        self.git.push(branch_name).map_err(io::Error::other)?;
         self.printer.println("Pushed!")?;
 
         Ok(())
@@ -163,11 +165,33 @@ where
             let path = Path::new(user_input);
 
             if path.is_absolute() {
-                break self.cm.config_write(Repo, path.display().to_string());
+                self.cm.config_write(Repo, path.display().to_string())?;
+                break;
             } else {
                 self.printer.error("Path must be absolute")?;
             }
         }
+        Ok(())
+    }
+    fn setup_ssh_key(&mut self) -> io::Result<()> {
+        loop {
+            self.printer.input_header("Absolute path to your ssh key")?;
+            let user_input = &self.reader.read_input()?;
+
+            if user_input.is_empty() {
+                continue;
+            }
+
+            let path = Path::new(user_input);
+
+            if path.is_absolute() {
+                self.cm.config_write(SshKey, path.display().to_string())?;
+                break;
+            } else {
+                self.printer.error("ssh key path must be absolute")?;
+            }
+        }
+        Ok(())
     }
 
     fn is_config_missing(&self) -> bool {

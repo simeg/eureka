@@ -11,6 +11,16 @@ pub trait GitManagement {
 #[derive(Default)]
 pub struct Git {
     repo: Option<git2::Repository>,
+    ssh_key: String,
+}
+
+impl Git {
+    pub fn new(ssh_key: &str) -> Self {
+        Self {
+            repo: None,
+            ssh_key: ssh_key.to_owned(),
+        }
+    }
 }
 
 impl GitManagement for Git {
@@ -73,25 +83,29 @@ impl GitManagement for Git {
     }
 
     fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
-        with_credentials(self.repo.as_ref().unwrap(), |cred_callback| {
-            let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
+        with_credentials(
+            self.repo.as_ref().unwrap(),
+            &self.ssh_key,
+            |cred_callback| {
+                let mut remote = self.repo.as_ref().unwrap().find_remote("origin")?;
 
-            let mut callbacks = git2::RemoteCallbacks::new();
-            let mut options = git2::PushOptions::new();
+                let mut callbacks = git2::RemoteCallbacks::new();
+                let mut options = git2::PushOptions::new();
 
-            callbacks.credentials(cred_callback);
-            options.remote_callbacks(callbacks);
+                callbacks.credentials(cred_callback);
+                options.remote_callbacks(callbacks);
 
-            remote.push(
-                &[format!(
-                    "refs/heads/{}:refs/heads/{}",
-                    branch_name, branch_name
-                )],
-                Some(&mut options),
-            )?;
+                remote.push(
+                    &[format!(
+                        "refs/heads/{}:refs/heads/{}",
+                        branch_name, branch_name
+                    )],
+                    Some(&mut options),
+                )?;
 
-            Ok(())
-        })
+                Ok(())
+            },
+        )
     }
 }
 
@@ -106,7 +120,7 @@ fn find_last_commit(repo: &git2::Repository) -> Result<git2::Commit, git2::Error
 /// This is inspired by [the way Cargo handles this][cargo-impl].
 ///
 /// [cargo-impl]: https://github.com/rust-lang/cargo/blob/94bf4781d0bbd266abe966c6fe1512bb1725d368/src/cargo/sources/git/utils.rs#L437
-fn with_credentials<F>(repo: &git2::Repository, mut f: F) -> Result<(), git2::Error>
+fn with_credentials<F>(repo: &git2::Repository, ssh_key: &str, mut f: F) -> Result<(), git2::Error>
 where
     F: FnMut(&mut git2::Credentials) -> Result<(), git2::Error>,
 {
@@ -124,7 +138,8 @@ where
         if allowed.contains(git2::CredentialType::SSH_KEY) && !tried_sshkey {
             tried_sshkey = true;
             let username = username.unwrap();
-            return git2::Cred::ssh_key_from_agent(username);
+            let path = Path::new(ssh_key);
+            return git2::Cred::ssh_key(username, None, path, None);
         }
 
         if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !tried_cred_helper {

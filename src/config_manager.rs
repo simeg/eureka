@@ -12,11 +12,13 @@ const CONFIG_FILE_NAME: &str = "config.json";
 #[derive(Serialize, Deserialize, Default)]
 struct Config {
     repo: PathBuf,
+    ssh_key: PathBuf,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ConfigType {
     Repo,
+    SshKey,
 }
 
 pub trait ConfigManagement {
@@ -43,6 +45,7 @@ impl ConfigManagement for ConfigManager {
         let config = self.config()?;
         let config_value = match config_type {
             ConfigType::Repo => config.repo.display().to_string(),
+            ConfigType::SshKey => config.ssh_key.display().to_string(),
         };
         Ok(config_value)
     }
@@ -51,11 +54,17 @@ impl ConfigManagement for ConfigManager {
         let config_path = self.config_path()?;
 
         // Create file if it doesn't exist, otherwise get it
-        let mut file = fs::File::create(config_path)?;
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .create(true)
+            .truncate(false)
+            .write(true)
+            .open(config_path)?;
 
         let mut config = self.config()?;
         match config_type {
             ConfigType::Repo => config.repo = PathBuf::from(value),
+            ConfigType::SshKey => config.ssh_key = PathBuf::from(value),
         }
 
         let json = serde_json::to_string(&config)?;
