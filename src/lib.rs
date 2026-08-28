@@ -1,13 +1,12 @@
 extern crate dirs;
 #[macro_use]
 extern crate log;
-extern crate core;
 
 use std::io;
 use std::io::{Error, ErrorKind};
 
 use crate::config_manager::ConfigManagement;
-use crate::config_manager::ConfigType::Repo;
+use crate::config_manager::ConfigType::{Filename, Repo};
 use crate::git::GitManagement;
 use crate::printer::{Print, PrintColor};
 use crate::program_access::ProgramOpener;
@@ -92,6 +91,9 @@ where
                 debug!("Setup repo path successfully");
             }
 
+            self.setup_filename()?;
+            debug!("Setup filename successfully");
+
             self.printer
                 .println("First time setup complete. Happy ideation!")?;
             Ok(())
@@ -109,14 +111,15 @@ where
         }
 
         let repo_path = self.cm.config_read(Repo)?;
+        let filename = self.cm.config_read(Filename)?;
         // We can set initialize git now as we have the repo path
         self.git
             .init(&repo_path)
             .map_err(|git_err| Error::new(ErrorKind::InvalidInput, git_err))?;
 
         self.program_opener
-            .open_editor(&format!("{}/README.md", &repo_path))
-            .and(self.git_add_commit_push(idea_summary))
+            .open_editor(&format!("{}/{}", &repo_path, &filename))
+            .and(self.git_add_commit_push(idea_summary, filename))
     }
 
     fn clear_config(&self) -> io::Result<()> {
@@ -124,11 +127,13 @@ where
     }
 
     fn open_idea_file(&self) -> io::Result<()> {
+        let repo_path = self.cm.config_read(Repo)?;
+        let filename = self.cm.config_read(Filename)?;
         self.program_opener
-            .open_pager(&format!("{}/README.md", self.cm.config_read(Repo)?))
+            .open_pager(&format!("{}/{}", repo_path, filename))
     }
 
-    fn git_add_commit_push(&mut self, commit_subject: String) -> io::Result<()> {
+    fn git_add_commit_push(&mut self, commit_subject: String, filename: String) -> io::Result<()> {
         let branch_name = "main";
         self.printer.println(&format!(
             "Adding and committing your new idea to {}..",
@@ -136,15 +141,15 @@ where
         ))?;
         self.git
             .checkout_branch(branch_name)
-            .and_then(|_| self.git.add())
+            .and_then(|_| self.git.add(&filename))
             .and_then(|_| self.git.commit(commit_subject.as_str()))
-            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+            .map_err(io::Error::other)?;
         self.printer.println("Added and committed!")?;
 
         self.printer.println("Pushing your new idea..")?;
         self.git
             .push(branch_name)
-            .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+            .map_err(io::Error::other)?;
         self.printer.println("Pushed!")?;
 
         Ok(())
@@ -168,6 +173,18 @@ where
                 self.printer.error("Path must be absolute")?;
             }
         }
+    }
+
+    fn setup_filename(&mut self) -> io::Result<()> {
+        self.printer
+            .input_header("Filename for ideas (default: README.md)")?;
+        let user_input = self.reader.read_input()?;
+        let filename = if user_input.is_empty() {
+            "README.md".to_string()
+        } else {
+            user_input
+        };
+        self.cm.config_write(Filename, filename)
     }
 
     fn is_config_missing(&self) -> bool {

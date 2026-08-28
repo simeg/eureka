@@ -29,13 +29,16 @@ mod tests {
             }
 
             fn config_read(&self, file: ConfigType) -> io::Result<String> {
-                let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter > 0 {
-                    panic!("Should only be read once");
+                match file {
+                    ConfigType::Repo => {
+                        let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
+                        if counter > 0 {
+                            panic!("Should only be read once");
+                        }
+                        Ok("some-path".to_string())
+                    }
+                    ConfigType::Filename => Ok("README.md".to_string()),
                 }
-
-                assert_eq!(file, ConfigType::Repo);
-                Ok("some-path".to_string())
             }
 
             fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
@@ -83,13 +86,16 @@ mod tests {
             }
 
             fn config_read(&self, file: ConfigType) -> io::Result<String> {
-                let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter > 0 {
-                    panic!("Should only be read once");
+                match file {
+                    ConfigType::Repo => {
+                        let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
+                        if counter > 0 {
+                            panic!("Repo should only be read once");
+                        }
+                        Ok("specific-repo-path".to_string())
+                    }
+                    ConfigType::Filename => Ok("README.md".to_string()),
                 }
-
-                assert_eq!(file, ConfigType::Repo);
-                Ok("specific-repo-path".to_string())
             }
 
             fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
@@ -146,19 +152,24 @@ mod tests {
                 false
             }
 
-            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-                let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
-                if counter == 0 {
-                    // First it checks if any config can be found and
-                    // based on that it decides to create the config dir
-                    Err(Error::new(ErrorKind::Other, "some-error"))
-                } else {
-                    Ok(String::from("some-ok"))
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
+                match file {
+                    ConfigType::Repo => {
+                        let counter = READ_COUNTER.fetch_add(1, Ordering::SeqCst);
+                        if counter == 0 {
+                            // First it checks if any config can be found and
+                            // based on that it decides to create the config dir
+                            Err(Error::new(ErrorKind::Other, "some-error"))
+                        } else {
+                            Ok(String::from("some-ok"))
+                        }
+                    }
+                    ConfigType::Filename => Ok("README.md".to_string()),
                 }
             }
 
             fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
-                unimplemented!()
+                Ok(())
             }
 
             fn config_rm(&self) -> io::Result<()> {
@@ -186,7 +197,7 @@ mod tests {
             }
 
             fn input_header(&mut self, _value: &str) -> io::Result<()> {
-                unimplemented!()
+                Ok(())
             }
 
             fn error(&mut self, _value: &str) -> io::Result<()> {
@@ -194,10 +205,19 @@ mod tests {
             }
         }
 
+        struct MockReader;
+
+        impl ReadInput for MockReader {
+            fn read_input(&mut self) -> io::Result<String> {
+                // Return empty to accept default filename
+                Ok(String::new())
+            }
+        }
+
         let mut eureka = Eureka::new(
             MockConfigManager {},
             MockPrinter {},
-            DefaultMockReader {},
+            MockReader {},
             DefaultGit {},
             DefaultMockProgramOpener {},
         );
@@ -215,6 +235,7 @@ mod tests {
     #[test]
     fn test_setup_repo() {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
+        static SETUP_REPO_READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
         struct MockConfigManager;
 
@@ -234,6 +255,7 @@ mod tests {
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
                     ConfigType::Repo => assert_eq!(value, "/absolute/path/to/specific-repo-path"),
+                    ConfigType::Filename => assert_eq!(value, "README.md"),
                 }
                 Ok(())
             }
@@ -267,7 +289,7 @@ mod tests {
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: main)");
+                    assert_eq!(value, "Filename for ideas (default: README.md)");
                 }
 
                 Ok(())
@@ -282,7 +304,13 @@ mod tests {
 
         impl ReadInput for MockReader {
             fn read_input(&mut self) -> io::Result<String> {
-                Ok(String::from("/absolute/path/to/specific-repo-path"))
+                let counter = SETUP_REPO_READ_COUNTER.fetch_add(1, Ordering::SeqCst);
+                if counter == 0 {
+                    Ok(String::from("/absolute/path/to/specific-repo-path"))
+                } else {
+                    // Filename - return empty to accept default
+                    Ok(String::new())
+                }
             }
         }
 
@@ -306,6 +334,7 @@ mod tests {
     #[test]
     fn test_setup_defaults_to_main_branch() {
         static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
+        static DEFAULTS_READ_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
         struct MockConfigManager;
 
@@ -325,6 +354,7 @@ mod tests {
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
                     ConfigType::Repo => assert_eq!(value, "/absolute/path/to/specific-repo-path"),
+                    ConfigType::Filename => assert_eq!(value, "README.md"),
                 }
                 Ok(())
             }
@@ -358,7 +388,7 @@ mod tests {
                 if counter == 0 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: main)");
+                    assert_eq!(value, "Filename for ideas (default: README.md)");
                 }
 
                 Ok(())
@@ -373,7 +403,13 @@ mod tests {
 
         impl ReadInput for MockReader {
             fn read_input(&mut self) -> io::Result<String> {
-                Ok(String::from("/absolute/path/to/specific-repo-path"))
+                let counter = DEFAULTS_READ_COUNTER.fetch_add(1, Ordering::SeqCst);
+                if counter == 0 {
+                    Ok(String::from("/absolute/path/to/specific-repo-path"))
+                } else {
+                    // Filename - return empty to accept default
+                    Ok(String::new())
+                }
             }
         }
 
@@ -417,6 +453,7 @@ mod tests {
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
                     ConfigType::Repo => assert_eq!(value, "/absolute/path/to/specific-repo-path"),
+                    ConfigType::Filename => assert_eq!(value, "README.md"),
                 }
                 Ok(())
             }
@@ -450,7 +487,7 @@ mod tests {
                 if counter <= 10 {
                     assert_eq!(value, "Absolute path to your idea repo");
                 } else {
-                    assert_eq!(value, "Name of branch (default: main)");
+                    assert_eq!(value, "Filename for ideas (default: README.md)");
                 }
                 Ok(())
             }
@@ -472,8 +509,11 @@ mod tests {
                 } else if counter < 10 {
                     // Return relative path to prompt it to ask again
                     Ok(String::from("some-relative-path"))
-                } else {
+                } else if counter == 10 {
                     Ok(String::from("/absolute/path/to/specific-repo-path"))
+                } else {
+                    // Filename - return empty to accept default
+                    Ok(String::new())
                 }
             }
         }
@@ -511,13 +551,17 @@ mod tests {
                 true
             }
 
-            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-                Ok(String::from("specific-config-string"))
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
+                match file {
+                    ConfigType::Repo => Ok(String::from("specific-config-string")),
+                    ConfigType::Filename => Ok("README.md".to_string()),
+                }
             }
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
                 match file {
                     ConfigType::Repo => assert_eq!(value, "specific-repo-path"),
+                    ConfigType::Filename => {}
                 }
                 Ok(())
             }
@@ -589,7 +633,7 @@ mod tests {
                 Ok(())
             }
 
-            fn add(&self) -> Result<(), git2::Error> {
+            fn add(&self, _filename: &str) -> Result<(), git2::Error> {
                 Ok(())
             }
 
@@ -649,6 +693,7 @@ mod tests {
             fn config_read(&self, file: ConfigType) -> io::Result<String> {
                 match file {
                     ConfigType::Repo => Ok("specific-repo".to_string()),
+                    ConfigType::Filename => Ok("README.md".to_string()),
                 }
             }
 
@@ -718,7 +763,8 @@ mod tests {
                 Ok(())
             }
 
-            fn add(&self) -> Result<(), git2::Error> {
+            fn add(&self, filename: &str) -> Result<(), git2::Error> {
+                assert_eq!(filename, "README.md");
                 Ok(())
             }
 
@@ -756,6 +802,294 @@ mod tests {
         let opts = EurekaOptions {
             clear_config: false,
             view: false,
+        };
+
+        let actual = eureka.run(opts);
+
+        assert!(actual.is_ok());
+    }
+
+    #[test]
+    fn test_setup_with_custom_filename() {
+        static INPUT_HEADER_COUNTER: AtomicUsize = AtomicUsize::new(0);
+        static READ_INPUT_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+        struct MockConfigManager;
+
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                Ok(())
+            }
+
+            fn config_dir_exists(&self) -> bool {
+                true
+            }
+
+            fn config_read(&self, _file: ConfigType) -> io::Result<String> {
+                Err(Error::new(ErrorKind::Other, "some-error"))
+            }
+
+            fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
+                match file {
+                    ConfigType::Repo => assert_eq!(value, "/absolute/path/to/repo"),
+                    ConfigType::Filename => assert_eq!(value, "ideas.md"),
+                }
+                Ok(())
+            }
+
+            fn config_rm(&self) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        struct MockPrinter;
+
+        impl Print for MockPrinter {
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn println(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, "First time setup complete. Happy ideation!");
+                Ok(())
+            }
+        }
+
+        impl PrintColor for MockPrinter {
+            fn fts_banner(&mut self) -> io::Result<()> {
+                Ok(())
+            }
+
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
+                let counter = INPUT_HEADER_COUNTER.fetch_add(1, Ordering::SeqCst);
+                if counter == 0 {
+                    assert_eq!(value, "Absolute path to your idea repo");
+                } else {
+                    assert_eq!(value, "Filename for ideas (default: README.md)");
+                }
+                Ok(())
+            }
+
+            fn error(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        struct MockReader;
+
+        impl ReadInput for MockReader {
+            fn read_input(&mut self) -> io::Result<String> {
+                let counter = READ_INPUT_COUNTER.fetch_add(1, Ordering::SeqCst);
+                if counter == 0 {
+                    Ok(String::from("/absolute/path/to/repo"))
+                } else {
+                    Ok(String::from("ideas.md"))
+                }
+            }
+        }
+
+        let mut eureka = Eureka::new(
+            MockConfigManager {},
+            MockPrinter {},
+            MockReader {},
+            DefaultGit {},
+            DefaultMockProgramOpener {},
+        );
+        let opts = EurekaOptions {
+            clear_config: false,
+            view: false,
+        };
+
+        let actual = eureka.run(opts);
+
+        assert!(actual.is_ok());
+    }
+
+    #[test]
+    fn test_e2e_with_custom_filename() {
+        static PRINT_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+        struct MockConfigManager;
+
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn config_dir_exists(&self) -> bool {
+                true
+            }
+
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
+                match file {
+                    ConfigType::Repo => Ok("my-repo".to_string()),
+                    ConfigType::Filename => Ok("ideas.md".to_string()),
+                }
+            }
+
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn config_rm(&self) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        struct MockPrinter;
+
+        impl Print for MockPrinter {
+            fn print(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn println(&mut self, value: &str) -> io::Result<()> {
+                let counter = PRINT_COUNTER.fetch_add(1, Ordering::SeqCst);
+                match counter {
+                    0 => assert_eq!(value, "Adding and committing your new idea to main.."),
+                    1 => assert_eq!(value, "Added and committed!"),
+                    2 => assert_eq!(value, "Pushing your new idea.."),
+                    3 => assert_eq!(value, "Pushed!"),
+                    _ => panic!("Unknown state"),
+                }
+                Ok(())
+            }
+        }
+
+        impl PrintColor for MockPrinter {
+            fn fts_banner(&mut self) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn input_header(&mut self, value: &str) -> io::Result<()> {
+                assert_eq!(value, ">> Idea summary");
+                Ok(())
+            }
+
+            fn error(&mut self, _value: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        struct MockReader;
+
+        impl ReadInput for MockReader {
+            fn read_input(&mut self) -> io::Result<String> {
+                Ok(String::from("my-idea"))
+            }
+        }
+
+        struct MockGit;
+
+        impl GitManagement for MockGit {
+            fn init(&mut self, repo_path: &str) -> Result<(), git2::Error> {
+                assert_eq!(repo_path, "my-repo");
+                Ok(())
+            }
+
+            fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error> {
+                assert_eq!(branch_name, "main");
+                Ok(())
+            }
+
+            fn add(&self, filename: &str) -> Result<(), git2::Error> {
+                assert_eq!(filename, "ideas.md");
+                Ok(())
+            }
+
+            fn commit(&self, subject: &str) -> Result<Oid, git2::Error> {
+                assert_eq!(subject, "my-idea");
+                Ok(Oid::zero())
+            }
+
+            fn push(&self, branch_name: &str) -> Result<(), git2::Error> {
+                assert_eq!(branch_name, "main");
+                Ok(())
+            }
+        }
+
+        struct MockProgramOpener;
+
+        impl ProgramOpener for MockProgramOpener {
+            fn open_editor(&self, file_path: &str) -> io::Result<()> {
+                assert_eq!(file_path, "my-repo/ideas.md");
+                Ok(())
+            }
+
+            fn open_pager(&self, _file_path: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+        }
+
+        let mut eureka = Eureka::new(
+            MockConfigManager {},
+            MockPrinter {},
+            MockReader {},
+            MockGit {},
+            MockProgramOpener {},
+        );
+        let opts = EurekaOptions {
+            clear_config: false,
+            view: false,
+        };
+
+        let actual = eureka.run(opts);
+
+        assert!(actual.is_ok());
+    }
+
+    #[test]
+    fn test_view_ideas_with_custom_filename() {
+        struct MockConfigManager;
+
+        impl ConfigManagement for MockConfigManager {
+            fn config_dir_create(&self) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn config_dir_exists(&self) -> bool {
+                unimplemented!()
+            }
+
+            fn config_read(&self, file: ConfigType) -> io::Result<String> {
+                match file {
+                    ConfigType::Repo => Ok("my-repo".to_string()),
+                    ConfigType::Filename => Ok("scratch.md".to_string()),
+                }
+            }
+
+            fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn config_rm(&self) -> io::Result<()> {
+                Ok(())
+            }
+        }
+
+        struct MockProgramAccess;
+
+        impl ProgramOpener for MockProgramAccess {
+            fn open_editor(&self, _file_path: &str) -> io::Result<()> {
+                unimplemented!()
+            }
+
+            fn open_pager(&self, file_path: &str) -> io::Result<()> {
+                assert_eq!(file_path, "my-repo/scratch.md");
+                Ok(())
+            }
+        }
+
+        let mut eureka = Eureka::new(
+            MockConfigManager,
+            DefaultMockPrinter {},
+            DefaultMockReader {},
+            DefaultGit {},
+            MockProgramAccess,
+        );
+        let opts = EurekaOptions {
+            clear_config: false,
+            view: true,
         };
 
         let actual = eureka.run(opts);
@@ -802,30 +1136,6 @@ mod tests {
         }
     }
 
-    struct DefaultMockConfigManager;
-
-    impl ConfigManagement for DefaultMockConfigManager {
-        fn config_dir_create(&self) -> io::Result<()> {
-            unimplemented!()
-        }
-
-        fn config_dir_exists(&self) -> bool {
-            unimplemented!()
-        }
-
-        fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-            unimplemented!()
-        }
-
-        fn config_write(&self, _file: ConfigType, _value: String) -> io::Result<()> {
-            unimplemented!()
-        }
-
-        fn config_rm(&self) -> io::Result<()> {
-            unimplemented!()
-        }
-    }
-
     struct DefaultGit;
 
     impl GitManagement for DefaultGit {
@@ -837,7 +1147,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn add(&self) -> Result<(), git2::Error> {
+        fn add(&self, _filename: &str) -> Result<(), git2::Error> {
             unimplemented!()
         }
 

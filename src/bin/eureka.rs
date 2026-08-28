@@ -44,11 +44,11 @@ fn main() {
     let output = termcolor::StandardStream::stdout(termcolor::ColorChoice::Always);
 
     let mut eureka = Eureka::new(
-        ConfigManager::default(),
+        ConfigManager,
         Printer::new(output),
         Reader::new(input),
         Git::default(),
-        ProgramAccess::default(),
+        ProgramAccess,
     );
 
     let opts = EurekaOptions {

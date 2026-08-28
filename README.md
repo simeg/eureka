@@ -10,10 +10,11 @@ store your idea and then continue working.
 ![demo](assets/demo.gif)
 
 ## Required Setup
-`eureka` requires a git repository with a `README.md` in the root folder. This
-is the default structure when you create an empty repository with a readme on
-GitHub, so it's easy to start using it. And since it's your own repository you
-can make it private to keep your ideas secret.
+`eureka` requires a git repository with a markdown file in the root folder. By
+default this is `README.md` (the default structure when you create an empty
+repository with a readme on GitHub), but you can customize the filename during
+setup. And since it's your own repository you can make it private to keep your
+ideas secret.
 
 `eureka` looks at your environment variables to decide what program to use.
 * `$EDITOR` for what to edit your ideas with (falls back to `vi`)
@@ -34,8 +35,9 @@ $ cargo install eureka
 _Rust stable version will always be supported_
 
 ## Usage
-The first time you run `eureka` it will ask for the path to your ideas repo.
-This configuration will be stored in your [XDG Base Directory](https://wiki.archlinux.org/title/XDG_Base_Directory) if found, otherwise in `$HOME/.config/eureka`.
+The first time you run `eureka` it will ask for the path to your ideas repo and
+the filename to use (defaults to `README.md` if left blank). This configuration
+will be stored in your [XDG Base Directory](https://wiki.archlinux.org/title/XDG_Base_Directory) if found, otherwise in `$HOME/.config/eureka`.
 
 After the setup simply run `eureka` to capture an idea. It will then be 
 committed and pushed to the `origin` remote and the `main` branch.
