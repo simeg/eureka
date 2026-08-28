@@ -67,8 +67,14 @@ impl ConfigManagement for ConfigManager {
     fn config_write(&self, config_type: ConfigType, value: String) -> io::Result<()> {
         let config_path = self.config_path()?;
 
-        // Read existing config before truncating the file
-        let mut config = self.config().unwrap_or_default();
+        // Read existing config before truncating the file. A missing file is
+        // expected during first time setup; any other error means we'd be
+        // overwriting config we failed to understand, so surface it instead.
+        let mut config = match self.config() {
+            Ok(config) => config,
+            Err(err) if err.kind() == ErrorKind::NotFound => Config::default(),
+            Err(err) => return Err(err),
+        };
         match config_type {
             ConfigType::Repo => config.repo = PathBuf::from(value),
             ConfigType::Filename => config.filename = value,
@@ -143,7 +149,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_dir_path() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
         // XDG_CONFIG_HOME is set in Github Actions so let's unset it
@@ -164,7 +170,7 @@ mod tests {
     fn test_config_manager__config_dir_path__when__xdg_config_home_env_var_set() -> TestResult {
         use std::path::Path;
 
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         unsafe { env::set_var("XDG_CONFIG_HOME", "/specific-path/.config") };
         assert_eq!(
             env::var("XDG_CONFIG_HOME"),
@@ -184,7 +190,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_dir_create() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_dir_create();
@@ -198,7 +204,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_dir_exists__success() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let config_dir_exists = cm.config_dir_exists();
@@ -212,7 +218,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_dir_exists__failure() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         // XDG_CONFIG_HOME is set in Github Actions so let's unset it
@@ -230,7 +236,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_read__success() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         let mut file =
             fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
@@ -248,7 +254,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_read__file_is_empty__default_config() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
@@ -265,7 +271,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_read__when__file_does_not_exist__failure() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let actual = cm.config_read(ConfigType::Repo).map_err(|e| e.kind());
@@ -281,7 +287,7 @@ mod tests {
     #[serial]
     fn test_config_manager__config_write__config_file_does_not_already_exist__success() -> TestResult
     {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
@@ -301,7 +307,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_write__config_file_already_exists__success() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
@@ -326,7 +332,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_rm__success() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         // Create file but leave it empty
         let _file = fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
@@ -342,7 +348,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_rm__file_does_not_exist__failure() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let actual = cm.config_rm().map_err(|e| e.kind());
@@ -357,7 +363,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_read__filename__success() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         let mut file =
             fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
@@ -375,7 +381,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_read__filename__default_when_missing() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
         let mut file =
             fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
@@ -394,7 +400,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_manager__config_write__filename__success() -> TestResult {
-        let cm = ConfigManager::default();
+        let cm = ConfigManager;
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let write_result = cm.config_write(ConfigType::Filename, String::from("ideas.md"));
@@ -407,6 +413,50 @@ mod tests {
         let expected = "{\"repo\":\"\",\"filename\":\"ideas.md\"}";
 
         assert_eq!(contents, expected);
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn test_config_manager__config_write__preserves_other_fields() -> TestResult {
+        let cm = ConfigManager;
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
+        let mut file =
+            fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
+        file.write_all("{\"repo\":\"/some/repo\",\"filename\":\"ideas.md\"}".as_bytes())?;
+
+        let write_result = cm.config_write(ConfigType::Filename, String::from("scratch.md"));
+
+        unsafe { env::remove_var("HOME") };
+
+        assert!(write_result.is_ok());
+
+        let contents = get_file_contents(&config_dir)?;
+        let expected = "{\"repo\":\"/some/repo\",\"filename\":\"scratch.md\"}";
+
+        assert_eq!(contents, expected);
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn test_config_manager__config_write__when__config_is_corrupt__does_not_overwrite() -> TestResult
+    {
+        let cm = ConfigManager;
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
+        let mut file =
+            fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
+        file.write_all("this is not json".as_bytes())?;
+
+        let write_result = cm.config_write(ConfigType::Repo, String::from("/some/repo"));
+
+        unsafe { env::remove_var("HOME") };
+
+        assert!(write_result.is_err());
+
+        // The unreadable config is left untouched rather than silently reset
+        let contents = get_file_contents(&config_dir)?;
+        assert_eq!(contents, "this is not json");
         Ok(())
     }
 

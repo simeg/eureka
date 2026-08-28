@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub trait GitManagement {
@@ -101,34 +102,110 @@ fn find_last_commit(repo: &git2::Repository) -> Result<git2::Commit<'_>, git2::E
         .map_err(|_| git2::Error::from_str("Couldn't find commit"))
 }
 
+/// Private key filenames to try, in priority order.
+const SSH_KEY_NAMES: [&str; 2] = ["id_ed25519", "id_rsa"];
+
+/// Resolve usable SSH key paths from `~/.ssh`, in priority order.
+fn ssh_key_paths() -> Vec<(PathBuf, Option<PathBuf>)> {
+    match dirs::home_dir() {
+        Some(home) => ssh_key_paths_in(&home.join(".ssh")),
+        None => vec![],
+    }
+}
+
+/// Resolve usable SSH key paths from `ssh_dir`, in priority order.
+///
+/// Only keys we can actually authenticate with are returned. libgit2 aborts the
+/// entire credential chain (rather than advancing to the next method) when
+/// libssh2 fails to *load* a key, so an unreadable or passphrase-protected key
+/// left in this list would block the credential-helper and default fallbacks.
+fn ssh_key_paths_in(ssh_dir: &Path) -> Vec<(PathBuf, Option<PathBuf>)> {
+    SSH_KEY_NAMES
+        .iter()
+        .filter_map(|name| {
+            let private = ssh_dir.join(name);
+            let contents = fs::read(&private).ok()?;
+            if is_passphrase_protected(&contents) {
+                return None;
+            }
+
+            let public = ssh_dir.join(format!("{}.pub", name));
+            let public = public.is_file().then_some(public);
+            Some((private, public))
+        })
+        .collect()
+}
+
+/// File magic identifying the modern OpenSSH private key format.
+const OPENSSH_MAGIC: &[u8] = b"openssh-key-v1\0";
+
+/// Detect an encrypted private key, which we cannot use without a passphrase.
+///
+/// Covers both the legacy PEM header and the modern OpenSSH format, where the
+/// cipher name follows the magic and is `none` when the key is unencrypted.
+fn is_passphrase_protected(key: &[u8]) -> bool {
+    if key.starts_with(OPENSSH_MAGIC) {
+        // Binary format: magic, then a length-prefixed cipher name.
+        let rest = &key[OPENSSH_MAGIC.len()..];
+        let Some((len, rest)) = rest.split_first_chunk::<4>() else {
+            return true; // Malformed - treat as unusable
+        };
+        let len = u32::from_be_bytes(*len) as usize;
+        return rest.get(..len) != Some(b"none");
+    }
+
+    // Base64-armoured OpenSSH keys and legacy PEM keys are both text.
+    let text = String::from_utf8_lossy(key);
+    if text.contains("Proc-Type: 4,ENCRYPTED") || text.contains("ENCRYPTED PRIVATE KEY") {
+        return true;
+    }
+
+    // Armoured OpenSSH: decode enough of the body to read the cipher name.
+    if text.contains("BEGIN OPENSSH PRIVATE KEY") {
+        let body: String = text
+            .lines()
+            .filter(|line| !line.starts_with("-----"))
+            .collect();
+        return match base64_decode(&body) {
+            Some(decoded) => is_passphrase_protected(&decoded),
+            None => true,
+        };
+    }
+
+    false
+}
+
+/// Decode base64 `input`, ignoring any trailing padding.
+fn base64_decode(input: &str) -> Option<Vec<u8>> {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    let symbols: Vec<u8> = input
+        .bytes()
+        .take_while(|b| *b != b'=')
+        .map(|b| ALPHABET.iter().position(|a| *a == b).map(|i| i as u8))
+        .collect::<Option<Vec<u8>>>()?;
+
+    // Each base64 symbol carries 6 bits, so every full 8 bits form a byte.
+    let mut out = Vec::with_capacity(symbols.len() * 6 / 8);
+    let mut buffer = 0u32;
+    let mut bits = 0u32;
+    for symbol in symbols {
+        buffer = (buffer << 6) | u32::from(symbol);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((buffer >> bits) as u8);
+        }
+    }
+
+    Some(out)
+}
+
 /// Helper to run git operations that require authentication.
 ///
 /// This is inspired by [the way Cargo handles this][cargo-impl].
 ///
 /// [cargo-impl]: https://github.com/rust-lang/cargo/blob/94bf4781d0bbd266abe966c6fe1512bb1725d368/src/cargo/sources/git/utils.rs#L437
-/// Resolve common SSH key paths in priority order.
-fn ssh_key_paths() -> Vec<(PathBuf, Option<PathBuf>)> {
-    let ssh_dir = match dirs::home_dir() {
-        Some(home) => home.join(".ssh"),
-        None => return vec![],
-    };
-
-    // ed25519 first (modern default), then rsa (legacy but common)
-    ["id_ed25519", "id_rsa"]
-        .iter()
-        .filter_map(|name| {
-            let private = ssh_dir.join(name);
-            if private.exists() {
-                let public = ssh_dir.join(format!("{}.pub", name));
-                let public = if public.exists() { Some(public) } else { None };
-                Some((private, public))
-            } else {
-                None
-            }
-        })
-        .collect()
-}
-
 fn with_credentials<F>(repo: &git2::Repository, mut f: F) -> Result<(), git2::Error>
 where
     F: FnMut(&mut git2::Credentials) -> Result<(), git2::Error>,
@@ -153,17 +230,14 @@ where
             return git2::Cred::ssh_key_from_agent(username);
         }
 
-        // 2. Try SSH keys from disk (~/.ssh/id_ed25519, ~/.ssh/id_rsa)
+        // 2. Try SSH keys from disk (~/.ssh/id_ed25519, ~/.ssh/id_rsa).
+        // Only keys ssh_key_paths deemed usable reach this point, so a failure
+        // here is a genuine rejection and libgit2 will retry with the next one.
         if allowed.contains(git2::CredentialType::SSH_KEY) && ssh_key_idx < ssh_keys.len() {
             let (ref private, ref public) = ssh_keys[ssh_key_idx];
             ssh_key_idx += 1;
             let username = username.unwrap();
-            return git2::Cred::ssh_key(
-                username,
-                public.as_deref(),
-                private,
-                None, // no passphrase -- passphrase-protected keys should use ssh-agent
-            );
+            return git2::Cred::ssh_key(username, public.as_deref(), private, None);
         }
 
         // 3. Try git credential helper (for HTTPS)
@@ -185,7 +259,10 @@ where
 #[allow(non_snake_case)]
 #[cfg(test)]
 mod tests {
-    use crate::git::{find_last_commit, Git, GitManagement};
+    use crate::git::{
+        find_last_commit, is_passphrase_protected, ssh_key_paths_in, Git, GitManagement,
+        OPENSSH_MAGIC,
+    };
     use git2::{BranchType, Repository, RepositoryInitOptions, Status};
     use tempfile::{NamedTempFile, TempDir};
 
@@ -240,6 +317,90 @@ mod tests {
 
         assert!(after.is_ok());
         assert_eq!(after.unwrap().name().unwrap(), "refs/heads/new-branch-name");
+    }
+
+    #[test]
+    fn test_git__ssh_key_paths_in__prefers_ed25519_and_pairs_public_key() {
+        let dir = TempDir::new().unwrap();
+        std::fs::write(dir.path().join("id_rsa"), "unencrypted").unwrap();
+        std::fs::write(dir.path().join("id_rsa.pub"), "pub").unwrap();
+        std::fs::write(dir.path().join("id_ed25519"), "unencrypted").unwrap();
+
+        let actual = ssh_key_paths_in(dir.path());
+
+        // ed25519 is preferred, and its missing .pub is reported as None
+        assert_eq!(actual.len(), 2);
+        assert_eq!(actual[0].0, dir.path().join("id_ed25519"));
+        assert_eq!(actual[0].1, None);
+        assert_eq!(actual[1].0, dir.path().join("id_rsa"));
+        assert_eq!(actual[1].1, Some(dir.path().join("id_rsa.pub")));
+    }
+
+    #[test]
+    fn test_git__ssh_key_paths_in__no_keys() {
+        let dir = TempDir::new().unwrap();
+
+        assert!(ssh_key_paths_in(dir.path()).is_empty());
+    }
+
+    /// Build PEM armour around `body` at runtime.
+    ///
+    /// Assembled rather than written literally so these fixtures don't trip
+    /// secret scanners -- the bodies below carry no key material.
+    fn armour(label: &str, body: &str) -> String {
+        let dashes = "-".repeat(5);
+        format!("{dashes}BEGIN {label}{dashes}\n{body}\n{dashes}END {label}{dashes}")
+    }
+
+    #[test]
+    fn test_git__ssh_key_paths_in__skips_passphrase_protected_key() {
+        let dir = TempDir::new().unwrap();
+        // libgit2 aborts the whole credential chain on an unloadable key, so
+        // an encrypted one must never be offered
+        std::fs::write(
+            dir.path().join("id_ed25519"),
+            armour("RSA PRIVATE KEY", "Proc-Type: 4,ENCRYPTED"),
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("id_rsa"), "unencrypted").unwrap();
+
+        let actual = ssh_key_paths_in(dir.path());
+
+        assert_eq!(actual.len(), 1);
+        assert_eq!(actual[0].0, dir.path().join("id_rsa"));
+    }
+
+    #[test]
+    fn test_git__is_passphrase_protected__openssh_binary() {
+        let unencrypted = [OPENSSH_MAGIC, &[0, 0, 0, 4], b"none"].concat();
+        assert!(!is_passphrase_protected(&unencrypted));
+
+        let encrypted = [OPENSSH_MAGIC, &[0, 0, 0, 10], b"aes256-ctr"].concat();
+        assert!(is_passphrase_protected(&encrypted));
+
+        // Truncated header is unusable, so treat it as protected
+        let truncated = [OPENSSH_MAGIC, &[0]].concat();
+        assert!(is_passphrase_protected(&truncated));
+    }
+
+    #[test]
+    fn test_git__is_passphrase_protected__armoured_and_pem() {
+        // Base64 of the openssh-key-v1 header with cipher "none"
+        let unencrypted = armour("OPENSSH PRIVATE KEY", "b3BlbnNzaC1rZXktdjEAAAAABG5vbmU=");
+        assert!(!is_passphrase_protected(unencrypted.as_bytes()));
+
+        // Same header, but cipher "aes256-ctr"
+        let encrypted = armour(
+            "OPENSSH PRIVATE KEY",
+            "b3BlbnNzaC1rZXktdjEAAAAACmFlczI1Ni1jdHIAAAAGYmNyeXB0",
+        );
+        assert!(is_passphrase_protected(encrypted.as_bytes()));
+
+        let pkcs8 = armour("ENCRYPTED PRIVATE KEY", "");
+        assert!(is_passphrase_protected(pkcs8.as_bytes()));
+
+        let plain_pem = armour("RSA PRIVATE KEY", "MIIEow==");
+        assert!(!is_passphrase_protected(plain_pem.as_bytes()));
     }
 
     #[test]
