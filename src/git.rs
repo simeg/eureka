@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 pub trait GitManagement {
     fn init(&mut self, repo_path: &str) -> Result<(), git2::Error>;
@@ -106,13 +106,38 @@ fn find_last_commit(repo: &git2::Repository) -> Result<git2::Commit<'_>, git2::E
 /// This is inspired by [the way Cargo handles this][cargo-impl].
 ///
 /// [cargo-impl]: https://github.com/rust-lang/cargo/blob/94bf4781d0bbd266abe966c6fe1512bb1725d368/src/cargo/sources/git/utils.rs#L437
+/// Resolve common SSH key paths in priority order.
+fn ssh_key_paths() -> Vec<(PathBuf, Option<PathBuf>)> {
+    let ssh_dir = match dirs::home_dir() {
+        Some(home) => home.join(".ssh"),
+        None => return vec![],
+    };
+
+    // ed25519 first (modern default), then rsa (legacy but common)
+    ["id_ed25519", "id_rsa"]
+        .iter()
+        .filter_map(|name| {
+            let private = ssh_dir.join(name);
+            if private.exists() {
+                let public = ssh_dir.join(format!("{}.pub", name));
+                let public = if public.exists() { Some(public) } else { None };
+                Some((private, public))
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 fn with_credentials<F>(repo: &git2::Repository, mut f: F) -> Result<(), git2::Error>
 where
     F: FnMut(&mut git2::Credentials) -> Result<(), git2::Error>,
 {
     let config = repo.config()?;
+    let ssh_keys = ssh_key_paths();
 
-    let mut tried_sshkey = false;
+    let mut tried_sshagent = false;
+    let mut ssh_key_idx = 0;
     let mut tried_cred_helper = false;
     let mut tried_default = false;
 
@@ -121,17 +146,33 @@ where
             return Err(git2::Error::from_str("No username specified in remote URL"));
         }
 
-        if allowed.contains(git2::CredentialType::SSH_KEY) && !tried_sshkey {
-            tried_sshkey = true;
+        // 1. Try ssh-agent
+        if allowed.contains(git2::CredentialType::SSH_KEY) && !tried_sshagent {
+            tried_sshagent = true;
             let username = username.unwrap();
             return git2::Cred::ssh_key_from_agent(username);
         }
 
+        // 2. Try SSH keys from disk (~/.ssh/id_ed25519, ~/.ssh/id_rsa)
+        if allowed.contains(git2::CredentialType::SSH_KEY) && ssh_key_idx < ssh_keys.len() {
+            let (ref private, ref public) = ssh_keys[ssh_key_idx];
+            ssh_key_idx += 1;
+            let username = username.unwrap();
+            return git2::Cred::ssh_key(
+                username,
+                public.as_deref(),
+                private,
+                None, // no passphrase -- passphrase-protected keys should use ssh-agent
+            );
+        }
+
+        // 3. Try git credential helper (for HTTPS)
         if allowed.contains(git2::CredentialType::USER_PASS_PLAINTEXT) && !tried_cred_helper {
             tried_cred_helper = true;
             return git2::Cred::credential_helper(&config, url, username);
         }
 
+        // 4. Try default credentials
         if allowed.contains(git2::CredentialType::DEFAULT) && !tried_default {
             tried_default = true;
             return git2::Cred::default();
