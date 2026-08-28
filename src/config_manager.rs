@@ -132,6 +132,7 @@ impl ConfigManager {
 #[cfg(test)]
 mod tests {
     use crate::config_manager::{ConfigManagement, ConfigManager, ConfigType};
+    use serial_test::serial;
     use std::io::{Read, Write};
     use std::path::{Path, PathBuf};
     use std::{env, fs, io, path};
@@ -140,29 +141,31 @@ mod tests {
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     #[test]
+    #[serial]
     fn test_config_manager__config_dir_path() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, tmp_dir) = set_config_dir()?;
 
         // XDG_CONFIG_HOME is set in Github Actions so let's unset it
-        env::remove_var("XDG_CONFIG_HOME");
+        unsafe { env::remove_var("XDG_CONFIG_HOME") };
         assert!(env::var("XDG_CONFIG_HOME").is_err());
 
         let actual = cm.config_dir_path()?;
         let expected = tmp_dir.path().join(".config").join("eureka");
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_dir_path__when__xdg_config_home_env_var_set() -> TestResult {
         use std::path::Path;
 
         let cm = ConfigManager::default();
-        env::set_var("XDG_CONFIG_HOME", "/specific-path/.config");
+        unsafe { env::set_var("XDG_CONFIG_HOME", "/specific-path/.config") };
         assert_eq!(
             env::var("XDG_CONFIG_HOME"),
             Ok(String::from("/specific-path/.config"))
@@ -171,7 +174,7 @@ mod tests {
         let actual = cm.config_dir_path()?;
         let expected = Path::new("/specific-path").join(".config").join("eureka");
 
-        env::remove_var("XDG_CONFIG_HOME");
+        unsafe { env::remove_var("XDG_CONFIG_HOME") };
         assert!(env::var("XDG_CONFIG_HOME").is_err());
 
         assert_eq!(actual, expected);
@@ -179,49 +182,53 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_dir_create() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         let actual = cm.config_dir_create();
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(actual.is_ok());
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_dir_exists__success() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let config_dir_exists = cm.config_dir_exists();
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(config_dir_exists);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_dir_exists__failure() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_config_dir()?;
 
         // XDG_CONFIG_HOME is set in Github Actions so let's unset it
-        env::remove_var("XDG_CONFIG_HOME");
+        unsafe { env::remove_var("XDG_CONFIG_HOME") };
         assert!(env::var("XDG_CONFIG_HOME").is_err());
 
         let config_dir_exists = cm.config_dir_exists();
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(!config_dir_exists);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_read__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -232,13 +239,14 @@ mod tests {
         let actual = cm.config_read(ConfigType::Repo)?;
         let expected = "this-repo-path-value";
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_read__file_is_empty__default_config() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -248,13 +256,14 @@ mod tests {
         let actual = cm.config_read(ConfigType::Repo)?;
         let expected = String::from("");
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_read__when__file_does_not_exist__failure() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -262,13 +271,14 @@ mod tests {
         let actual = cm.config_read(ConfigType::Repo).map_err(|e| e.kind());
         let expected = Err(io::ErrorKind::NotFound);
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_write__config_file_does_not_already_exist__success() -> TestResult
     {
         let cm = ConfigManager::default();
@@ -276,7 +286,7 @@ mod tests {
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(write_result.is_ok());
 
@@ -289,6 +299,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_write__config_file_already_exists__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -297,7 +308,7 @@ mod tests {
 
         let write_result = cm.config_write(ConfigType::Repo, String::from("this-specific-value"));
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(write_result.is_ok());
 
@@ -313,6 +324,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_rm__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -321,13 +333,14 @@ mod tests {
 
         let actual = cm.config_rm();
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(actual.is_ok());
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_rm__file_does_not_exist__failure() -> TestResult {
         let cm = ConfigManager::default();
         let (_config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -335,13 +348,14 @@ mod tests {
         let actual = cm.config_rm().map_err(|e| e.kind());
         let expected = Err(io::ErrorKind::NotFound);
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_read__filename__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -352,13 +366,14 @@ mod tests {
         let actual = cm.config_read(ConfigType::Filename)?;
         let expected = "ideas.md";
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_read__filename__default_when_missing() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
@@ -370,20 +385,21 @@ mod tests {
         let actual = cm.config_read(ConfigType::Filename)?;
         let expected = "README.md";
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert_eq!(actual, expected);
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_config_manager__config_write__filename__success() -> TestResult {
         let cm = ConfigManager::default();
         let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
 
         let write_result = cm.config_write(ConfigType::Filename, String::from("ideas.md"));
 
-        env::remove_var("HOME");
+        unsafe { env::remove_var("HOME") };
 
         assert!(write_result.is_ok());
 
@@ -399,7 +415,9 @@ mod tests {
         // Create the config dir. When tmp_dir is destroyed it will be deleted
         let config_dir = tmp_dir.path().join(".config").join("eureka");
 
-        env::set_var("HOME", tmp_dir.path());
+        // Ensure XDG_CONFIG_HOME doesn't override HOME-based path resolution
+        unsafe { env::remove_var("XDG_CONFIG_HOME") };
+        unsafe { env::set_var("HOME", tmp_dir.path()) };
         assert_eq!(
             env::var("HOME"),
             Ok(tmp_dir.path().to_str().unwrap().to_string())

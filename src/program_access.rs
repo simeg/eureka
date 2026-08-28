@@ -41,6 +41,7 @@ impl ProgramAccess {
 #[cfg(test)]
 mod tests {
     use crate::program_access::{ProgramAccess, ProgramOpener};
+    use serial_test::serial;
     use std::env;
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -64,11 +65,12 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_program_access__open_with_fallback__success() -> TestResult {
         let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
-        env::set_var("READER_ENV_VAR", "echo");
+        unsafe { env::set_var("READER_ENV_VAR", "echo") };
 
         program_access.open_with_fallback(
             file_path,
@@ -76,16 +78,17 @@ mod tests {
             "some-non-existing-program",
         )?;
 
-        env::remove_var("READER_ENV_VARIABLE");
+        unsafe { env::remove_var("READER_ENV_VARIABLE") };
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_program_access__open_with_fallback__uses_fallback() -> TestResult {
         let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
-        env::remove_var("THIS_ENV_VAR");
+        unsafe { env::remove_var("THIS_ENV_VAR") };
 
         program_access.open_with_fallback(file_path, "THIS_ENV_VAR", "echo")?;
 
@@ -93,30 +96,32 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_program_access__open_editor__success() -> TestResult {
         let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         let editor_value = env::var("EDITOR").unwrap_or_else(|_| "vi".to_string());
-        env::set_var("EDITOR", "echo");
+        unsafe { env::set_var("EDITOR", "echo") };
 
         program_access.open_editor(file_path)?;
 
-        env::set_var("EDITOR", editor_value);
+        unsafe { env::set_var("EDITOR", editor_value) };
         Ok(())
     }
 
     #[test]
+    #[serial]
     fn test_program_access__open_pager__success() -> TestResult {
         let program_access = ProgramAccess::default();
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         let pager_value = env::var("PAGER").unwrap_or_else(|_| "less".to_string());
-        env::set_var("PAGER", "echo");
+        unsafe { env::set_var("PAGER", "echo") };
 
         program_access.open_pager(file_path)?;
 
-        env::set_var("PAGER", pager_value);
+        unsafe { env::set_var("PAGER", pager_value) };
         Ok(())
     }
 }
