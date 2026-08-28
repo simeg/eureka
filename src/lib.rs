@@ -61,7 +61,7 @@ where
     }
 
     pub fn run(&mut self, opts: EurekaOptions) -> io::Result<()> {
-        debug!("Running with options: {:?}", &opts);
+        debug!("Running with options: {:?}", opts);
 
         if opts.clear_config {
             self.clear_config()?;
@@ -118,7 +118,7 @@ where
             .map_err(|git_err| Error::new(ErrorKind::InvalidInput, git_err))?;
 
         self.program_opener
-            .open_editor(&format!("{}/{}", &repo_path, &filename))
+            .open_editor(&format!("{}/{}", repo_path, filename))
             .and(self.git_add_commit_push(idea_summary, filename))
     }
 
@@ -137,7 +137,7 @@ where
         let branch_name = "main";
         self.printer.println(&format!(
             "Adding and committing your new idea to {}..",
-            &branch_name
+            branch_name
         ))?;
         self.git
             .checkout_branch(branch_name)
@@ -147,9 +147,7 @@ where
         self.printer.println("Added and committed!")?;
 
         self.printer.println("Pushing your new idea..")?;
-        self.git
-            .push(branch_name)
-            .map_err(io::Error::other)?;
+        self.git.push(branch_name).map_err(io::Error::other)?;
         self.printer.println("Pushed!")?;
 
         Ok(())
