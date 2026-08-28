@@ -3,7 +3,7 @@ use std::path::Path;
 pub trait GitManagement {
     fn init(&mut self, repo_path: &str) -> Result<(), git2::Error>;
     fn checkout_branch(&self, branch_name: &str) -> Result<(), git2::Error>;
-    fn add(&self) -> Result<(), git2::Error>;
+    fn add(&self, filename: &str) -> Result<(), git2::Error>;
     fn commit(&self, subject: &str) -> Result<git2::Oid, git2::Error>;
     fn push(&self, branch_name: &str) -> Result<(), git2::Error>;
 }
@@ -45,10 +45,10 @@ impl GitManagement for Git {
         repo.set_head(refname.as_str())
     }
 
-    fn add(&self) -> Result<(), git2::Error> {
+    fn add(&self, filename: &str) -> Result<(), git2::Error> {
         let mut index = self.repo.as_ref().unwrap().index()?;
 
-        index.add_path(Path::new("README.md"))?;
+        index.add_path(Path::new(filename))?;
         index.write()
     }
 
@@ -95,7 +95,7 @@ impl GitManagement for Git {
     }
 }
 
-fn find_last_commit(repo: &git2::Repository) -> Result<git2::Commit, git2::Error> {
+fn find_last_commit(repo: &git2::Repository) -> Result<git2::Commit<'_>, git2::Error> {
     let obj = repo.head()?.resolve()?.peel(git2::ObjectType::Commit)?;
     obj.into_commit()
         .map_err(|_| git2::Error::from_str("Couldn't find commit"))
@@ -211,7 +211,7 @@ mod tests {
         let before = statuses_before.get(0).unwrap();
         assert_eq!(before.status(), Status::WT_NEW);
 
-        git.add().unwrap();
+        git.add("README.md").unwrap();
 
         let statuses_after = repo.statuses(None).unwrap();
         let after = statuses_after.get(0).unwrap();
@@ -228,7 +228,7 @@ mod tests {
         let before = find_last_commit(git.repo.as_ref().unwrap());
         assert_eq!(before.unwrap().summary().unwrap(), "initial-msg");
 
-        git.add().unwrap();
+        git.add("README.md").unwrap();
         git.commit("some-subject").unwrap();
 
         let after = find_last_commit(git.repo.as_ref().unwrap());

@@ -9,14 +9,30 @@ use serde::{Deserialize, Serialize};
 
 const CONFIG_FILE_NAME: &str = "config.json";
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 struct Config {
     repo: PathBuf,
+    #[serde(default = "default_filename")]
+    filename: String,
+}
+
+fn default_filename() -> String {
+    "README.md".to_string()
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            repo: PathBuf::default(),
+            filename: default_filename(),
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum ConfigType {
     Repo,
+    Filename,
 }
 
 pub trait ConfigManagement {
@@ -43,6 +59,7 @@ impl ConfigManagement for ConfigManager {
         let config = self.config()?;
         let config_value = match config_type {
             ConfigType::Repo => config.repo.display().to_string(),
+            ConfigType::Filename => config.filename,
         };
         Ok(config_value)
     }
@@ -50,16 +67,16 @@ impl ConfigManagement for ConfigManager {
     fn config_write(&self, config_type: ConfigType, value: String) -> io::Result<()> {
         let config_path = self.config_path()?;
 
-        // Create file if it doesn't exist, otherwise get it
-        let mut file = fs::File::create(config_path)?;
-
-        let mut config = self.config()?;
+        // Read existing config before truncating the file
+        let mut config = self.config().unwrap_or_default();
         match config_type {
             ConfigType::Repo => config.repo = PathBuf::from(value),
+            ConfigType::Filename => config.filename = value,
         }
 
         let json = serde_json::to_string(&config)?;
 
+        let mut file = fs::File::create(config_path)?;
         file.write_all(json.as_bytes())
     }
 
@@ -265,7 +282,7 @@ mod tests {
 
         // Assert file contents
         let contents = get_file_contents(&config_dir)?;
-        let expected = "{\"repo\":\"this-specific-value\"}";
+        let expected = "{\"repo\":\"this-specific-value\",\"filename\":\"README.md\"}";
 
         assert_eq!(contents, expected);
         Ok(())
@@ -289,7 +306,7 @@ mod tests {
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
 
-        let expected = "{\"repo\":\"this-specific-value\"}";
+        let expected = "{\"repo\":\"this-specific-value\",\"filename\":\"README.md\"}";
 
         assert_eq!(contents, expected);
         Ok(())
@@ -321,6 +338,59 @@ mod tests {
         env::remove_var("HOME");
 
         assert_eq!(actual, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_manager__config_read__filename__success() -> TestResult {
+        let cm = ConfigManager::default();
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
+        let mut file =
+            fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
+        file.write_all("{\"repo\": \"some-repo\", \"filename\": \"ideas.md\"}".as_bytes())?;
+
+        let actual = cm.config_read(ConfigType::Filename)?;
+        let expected = "ideas.md";
+
+        env::remove_var("HOME");
+
+        assert_eq!(actual, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_manager__config_read__filename__default_when_missing() -> TestResult {
+        let cm = ConfigManager::default();
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
+        let mut file =
+            fs::File::create(path::Path::new(&config_dir.join("config.json").as_os_str()))?;
+        // Old config format without filename field
+        file.write_all("{\"repo\": \"some-repo\"}".as_bytes())?;
+
+        let actual = cm.config_read(ConfigType::Filename)?;
+        let expected = "README.md";
+
+        env::remove_var("HOME");
+
+        assert_eq!(actual, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_manager__config_write__filename__success() -> TestResult {
+        let cm = ConfigManager::default();
+        let (config_dir, _tmp_dir) = set_and_create_config_dir()?;
+
+        let write_result = cm.config_write(ConfigType::Filename, String::from("ideas.md"));
+
+        env::remove_var("HOME");
+
+        assert!(write_result.is_ok());
+
+        let contents = get_file_contents(&config_dir)?;
+        let expected = "{\"repo\":\"\",\"filename\":\"ideas.md\"}";
+
+        assert_eq!(contents, expected);
         Ok(())
     }
 

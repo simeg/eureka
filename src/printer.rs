@@ -55,9 +55,9 @@ impl<W: Write + termcolor::WriteColor> PrintColor for Printer<W> {
             "#".repeat(60)
         );
         let description = r#"
-This tool requires you to have a repository with a README.md
-in the root folder. The markdown file is where your ideas
-will be stored.
+This tool requires you to have a repository with a markdown
+file in the root folder. The file is where your ideas will be
+stored.
 
 Once first time setup has completed, simply run Eureka again
 to begin writing down ideas.
@@ -144,9 +144,9 @@ mod tests {
 ####                  First Time Setup                  ####
 ############################################################
 
-This tool requires you to have a repository with a README.md
-in the root folder. The markdown file is where your ideas
-will be stored.
+This tool requires you to have a repository with a markdown
+file in the root folder. The file is where your ideas will be
+stored.
 
 Once first time setup has completed, simply run Eureka again
 to begin writing down ideas.";
