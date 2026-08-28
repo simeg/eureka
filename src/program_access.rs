@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn test_program_access__get_if_available__success() {
-        let program_access = ProgramAccess::default();
+        let program_access = ProgramAccess;
 
         let actual = program_access.get_if_available("echo");
 
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_program_access__get_if_available__failure() {
-        let program_access = ProgramAccess::default();
+        let program_access = ProgramAccess;
 
         let actual = program_access.get_if_available("some-non-existing-program");
 
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_program_access__open_with_fallback__success() -> TestResult {
-        let program_access = ProgramAccess::default();
+        let program_access = ProgramAccess;
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         unsafe { env::set_var("READER_ENV_VAR", "echo") };
@@ -85,7 +85,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_program_access__open_with_fallback__uses_fallback() -> TestResult {
-        let program_access = ProgramAccess::default();
+        let program_access = ProgramAccess;
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         unsafe { env::remove_var("THIS_ENV_VAR") };
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_program_access__open_editor__success() -> TestResult {
-        let program_access = ProgramAccess::default();
+        let program_access = ProgramAccess;
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         let editor_value = env::var("EDITOR").unwrap_or_else(|_| "vi".to_string());
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_program_access__open_pager__success() -> TestResult {
-        let program_access = ProgramAccess::default();
+        let program_access = ProgramAccess;
         let tmp_file = tempfile::NamedTempFile::new()?;
         let file_path = tmp_file.path().to_str().unwrap();
         let pager_value = env::var("PAGER").unwrap_or_else(|_| "less".to_string());

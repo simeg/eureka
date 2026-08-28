@@ -10,7 +10,7 @@ mod tests {
     use git2::Oid;
     use std::cmp::Ordering as CmpOrdering;
     use std::io;
-    use std::io::{Error, ErrorKind};
+    use std::io::Error;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[test]
@@ -159,7 +159,7 @@ mod tests {
                         if counter == 0 {
                             // First it checks if any config can be found and
                             // based on that it decides to create the config dir
-                            Err(Error::new(ErrorKind::Other, "some-error"))
+                            Err(Error::other("some-error"))
                         } else {
                             Ok(String::from("some-ok"))
                         }
@@ -249,7 +249,7 @@ mod tests {
             }
 
             fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-                Err(Error::new(ErrorKind::Other, "some-error"))
+                Err(Error::other("some-error"))
             }
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
@@ -348,7 +348,7 @@ mod tests {
             }
 
             fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-                Err(Error::new(ErrorKind::Other, "some-error"))
+                Err(Error::other("some-error"))
             }
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
@@ -447,7 +447,7 @@ mod tests {
             }
 
             fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-                Err(Error::new(ErrorKind::Other, "some-error"))
+                Err(Error::other("some-error"))
             }
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
@@ -826,7 +826,7 @@ mod tests {
             }
 
             fn config_read(&self, _file: ConfigType) -> io::Result<String> {
-                Err(Error::new(ErrorKind::Other, "some-error"))
+                Err(Error::other("some-error"))
             }
 
             fn config_write(&self, file: ConfigType, value: String) -> io::Result<()> {
