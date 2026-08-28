@@ -1,5 +1,22 @@
 # Changelog
 
+## Version 2.1.0
+
+**New**
+* Choose the filename used to store your ideas during first time setup. Leave it
+  blank to keep using `README.md`, which remains the default.
+
+**Fixes**
+* Pushing now works when `ssh-agent` isn't running, by falling back to
+  `~/.ssh/id_ed25519` and `~/.ssh/id_rsa`. Keys with other names, or configured
+  via `IdentityFile` in `~/.ssh/config`, are not picked up yet.
+* A config file that can't be parsed is no longer silently overwritten with
+  defaults.
+
+**Other changes**
+* Dependency updates
+* CI now uses maintained GitHub Actions and lints test code too
+
 ## Version 2.0.0
 
 This version introduces some breaking changes for _how_ and _where_ configuration is stored, as well as changes the default git branch from `master` to `main`, and making the branch name non-configurable.
